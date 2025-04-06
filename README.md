@@ -17,11 +17,20 @@
 - Python 3.12 이상
 - OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상
 
-### 자동 설치
-
 ### 윈도우 자동 설치 방법
 
 현재 자동 설치는 윈도우 환경에서만 지원됩니다.
+
+### 설치 전 필수 프로그램
+
+프로그램을 설치하기 전에 다음 프로그램이 필요합니다:
+
+1. **Git**: [Git 다운로드 페이지](https://git-scm.com/downloads/win)에서 설치 파일을 다운로드하여 설치합니다.
+2. **uv**: [uv 설치 가이드](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_2)를 참고하여 설치합니다.
+
+위 프로그램들이 설치되어 있어야 자동 설치 스크립트가 정상적으로 작동합니다.
+
+### 설치 절차
 
 1. [mcpack-translator-win.zip](https://github.com/kunho-park/mcpack-translator/releases/download/setup/mcpack-translator-win.zip) 파일을 다운로드합니다.
 2. 압축을 풀고 `update.bat` 파일을 실행하여 최신 버전으로 업데이트합니다.
