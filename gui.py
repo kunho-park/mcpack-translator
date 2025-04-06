@@ -398,27 +398,16 @@ def main():
             "gpt-4.5-preview",
             "gpt-4o",
             "gpt-4o-mini",
-            "gpt-3.5-turbo",
-            "gpt-4-turbo",
-            "gpt-4",
         ],
         "Google": [
-            "gemini-2.5-pro-exp-03-25",
             "gemini-2.0-flash",
             "gemini-2.0-flash-lite",
-            "gemini-pro",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash",
         ],
         "Grok": ["grok-2-1212"],
         "Ollama": ["직접 입력 하세요."],
         "Anthropic": [
             "claude-3-7-sonnet-20250219",
             "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
         ],
     }
 
@@ -913,7 +902,10 @@ def main():
                     st.info(f"리소스팩이 생성되었습니다: {resourcepack_zip}")
 
         except Exception as e:
-            st.error(f"번역 중 오류 발생: {str(e)}")
+            error_traceback = traceback.format_exc()
+            st.error(
+                f"번역 중 오류 발생: {str(e)}\n\n상세 오류 정보:\n{error_traceback}"
+            )
 
 
 if __name__ == "__main__":
