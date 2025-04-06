@@ -718,18 +718,6 @@ def main():
                                 with open(input_file, "w", encoding="utf-8") as f:
                                     json.dump(en_data, f, ensure_ascii=False, indent=4)
 
-                                # JSON 키 화이트리스트 설정 (Patchouli 책)
-                                json_key_white_list = None
-                                if "patchouli_books" in en_file:
-                                    json_key_white_list = [
-                                        "pages",
-                                        "text",
-                                        "title",
-                                        "subtitle",
-                                        "description",
-                                        "name",
-                                    ]
-
                                 # 번역 처리
                                 translation_dictionary = sort_and_filter_dictionary()
 
@@ -746,7 +734,6 @@ def main():
                                     output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
                                     custom_dictionary_dict=translation_dictionary,
                                     llm=llm,
-                                    json_key_white_list=json_key_white_list,
                                 )
 
                                 # 원래 파일 형식으로 변환

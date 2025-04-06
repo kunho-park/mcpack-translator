@@ -27,4 +27,5 @@ test/
 *.log
 *.bat
 
+test.py
 uv.lock

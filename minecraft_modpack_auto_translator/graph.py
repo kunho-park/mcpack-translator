@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import re
+import traceback
 from typing import List
 
 import regex
@@ -24,10 +25,35 @@ from .config import (
     HTML_TAG_PATTERN,
     ITEM_PLACEHOLDER_PATTERN,
     JSON_PLACEHOLDER_PATTERN,
+    MINECRAFT_ITEM_CODE_PATTERN,
     RULES_FOR_NO_PLACEHOLDER,
     RULES_FOR_PLACEHOLDER,
     TEMPLATE_TRANSLATE_TEXT,
 )
+from .loaders import (
+    DefaultLoader,
+    DictLoader,
+    ListLoader,
+    LoaderRegistry,
+    PatchouliBooksLoader,
+    StringLoader,
+    TConstructBooksLoader,
+    TranslationContext,
+)
+
+registry = LoaderRegistry()
+
+# 로더 등록 (우선순위 순서대로)
+
+# 특수 케이스 먼저
+registry.register(PatchouliBooksLoader())
+registry.register(TConstructBooksLoader())
+
+# 일반 케이스
+registry.register(ListLoader())
+registry.register(StringLoader())
+registry.register(DictLoader())
+registry.register(DefaultLoader())  # 기본 로더는 항상 마지막
 
 langfuse_handler = CallbackHandler(
     public_key="pk-lf-4f8f71f2-cf51-494c-ab34-9111c2ae3238",
@@ -61,41 +87,24 @@ def extract_special_formats(text):
     ]
     html_tags_placeholders = [i for i in re.findall(HTML_TAG_PATTERN, text) if i != ""]
 
+    # 마인크래프트 아이템 코드 패턴 (예: minecraft:grass)
+    minecraft_item_codes = [
+        i for i in re.findall(MINECRAFT_ITEM_CODE_PATTERN, text) if i != ""
+    ]
+
     # 모든 특수 형식을 [PLACEHOLDER_N] 형태로 대체
     replaced_text = text
     placeholder_map = {}
     placeholder_count = 0
 
-    for html_tag_placeholder in html_tags_placeholders:
-        if html_tag_placeholder in replaced_text:
-            placeholder_count += 1
-            token = f"[P{placeholder_count}]"
-            replaced_text = replaced_text.replace(html_tag_placeholder, token, 1)
-            placeholder_map[token] = html_tag_placeholder
-
-
-    for item_placeholder in item_placeholders:
-        if item_placeholder in replaced_text:
-            placeholder_count += 1
-            token = f"[P{placeholder_count}]"
-            replaced_text = replaced_text.replace(item_placeholder, token, 1)
-            placeholder_map[token] = item_placeholder
-
-    for json_placeholder in json_placeholders:
-        if json_placeholder in replaced_text:
-            placeholder_count += 1
-            token = f"[P{placeholder_count}]"
-            replaced_text = replaced_text.replace(json_placeholder, token, 1)
-            placeholder_map[token] = json_placeholder
-
-    for code in format_codes:
-        if code in replaced_text:
-            placeholder_count += 1
-            token = f"[P{placeholder_count}]"
-            replaced_text = replaced_text.replace(code, token, 1)
-            placeholder_map[token] = code
-
-    for placeholder in c_placeholders:
+    for placeholder in (
+        html_tags_placeholders
+        + item_placeholders
+        + json_placeholders
+        + format_codes
+        + c_placeholders
+        + minecraft_item_codes
+    ):
         if placeholder in replaced_text:
             placeholder_count += 1
             token = f"[P{placeholder_count}]"
@@ -491,12 +500,13 @@ def translate_json_file(
     output_path,
     custom_dictionary_dict={},
     llm=None,
-    json_key_white_list=None,
 ):
     global translation_dictionary, translation_dictionary_lowercase
 
     translation_dictionary = {}
     translation_dictionary_lowercase = {}
+
+    # 로더 레지스트리 초기화
 
     # 입력 JSON 파일 로드
     with open(input_path, "r", encoding="utf-8") as f:
@@ -511,82 +521,28 @@ def translate_json_file(
     # 진행 상황 표시를 위한 tqdm 설정
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
 
+    # 컨텍스트 생성
+    context = TranslationContext(
+        translation_graph=translation_graph,
+        custom_dictionary_dict=custom_dictionary_dict,
+        llm=llm,
+        registry=registry,
+    )
+
     idx = 0
-    for path, value in tqdm(list(data.items()), desc="번역 진행률"):
-        if json_key_white_list is not None:
-            if path not in json_key_white_list:
-                continue
-
-        try:  # 리스트인 경우와 문자열인 경우 구분 처리
-            if isinstance(value, list):
-                if path == "pages":
-                    # 'pages' 키를 가진 리스트 처리
-                    translated_pages = []
-                    for page in value:
-                        if isinstance(page, dict):
-                            # 페이지가 딕셔너리인 경우
-                            translated_page = copy.deepcopy(page)
-
-                            # 'text' 키가 있는 경우 번역
-                            for k in ["title", "text", "subtitle"]:
-                                if k in page and isinstance(page[k], str):
-                                    text = page[k].replace("\\n", "\n")
-                                    if text.strip() != "":
-                                        state = translation_graph.invoke(
-                                            {
-                                                "text": text,
-                                                "custom_dictionary_dict": custom_dictionary_dict,
-                                                "llm": llm,
-                                            },
-                                        )
-                                        translated_page[k] = state["restored_text"]
-
-                            translated_pages.append(translated_page)
-
-                    translated_data[path] = translated_pages
-                else:
-                    # 리스트의 각 항목 번역
-                    translated_list = []
-                    for item in value:
-                        item = item.replace("\\n", "\n")
-                        if item.strip() == "":
-                            translated_list.append("")
-                            continue
-
-                        state = translation_graph.invoke(
-                            {
-                                "text": item,
-                                "custom_dictionary_dict": custom_dictionary_dict,
-                                "llm": llm,
-                            },
-                        )
-                        translated_list.append(state["restored_text"])
-
-                    translated_data[path] = translated_list
-            elif isinstance(value, str):
-                # 문자열인 경우 기존 방식대로 처리
-                if value.strip() == "":
-                    continue
-
-                value = value.replace("\\n", "\n")
-                
-                state = translation_graph.invoke(
-                    {
-                        "text": value,
-                        "custom_dictionary_dict": custom_dictionary_dict,
-                        "llm": llm,
-                    },
-                )
-                translated_data[path] = state["restored_text"]
-            else:
-                translated_data[path] = value
-                logger.info(f"문자열이 아닌 경우: {path} = {value}")
-
+    for key, value in tqdm(list(data.items()), desc="번역 진행률"):
+        try:
+            # 레지스트리를 통해 적절한 로더로 처리
+            translated_data[key] = registry.process_item(
+                input_path, key, value, context
+            )
         except Exception as e:
             logger.error(f"오류 발생: {e}")
+            print(traceback.format_exc())
 
         idx += 1
         if idx % 100 == 0:
+            # 주기적으로 중간 결과 저장
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(translated_data, f, ensure_ascii=False, indent=4)
 
