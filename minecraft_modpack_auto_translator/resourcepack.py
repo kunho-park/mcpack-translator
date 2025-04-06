@@ -63,9 +63,7 @@ def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation")
             logger.warning(f"폴더 또는 파일이 존재하지 않습니다: {folder}")
             continue
         if "mods/" in folder:
-            for path in glob(
-                os.path.join(folder, "temp_extracted", "*"), recursive=True
-            ):
+            for path in glob(os.path.join(folder, "extracted", "*"), recursive=True):
                 # 모드 추출 파일을 리소스팩 디렉토리로 복사
                 # 대상 디렉토리가 이미 존재하는 경우 오류가 발생할 수 있으므로
                 # 파일별로 복사 진행

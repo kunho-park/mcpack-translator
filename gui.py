@@ -435,9 +435,16 @@ def main():
     # API Base URL (환경 변수에서 먼저 읽기)
     env_api_base = os.getenv(API_BASE_ENV_VARS.get(model_provider, ""))
     default_api_base = "http://localhost:11434" if model_provider == "Ollama" else ""
-    api_base_url = st.sidebar.text_input(
-        "API Base URL", value=env_api_base if env_api_base else default_api_base
-    )
+
+    # API Base URL 수정 여부 체크박스
+    use_custom_api_base = st.sidebar.checkbox("API Base URL 수정하기")
+
+    if use_custom_api_base:
+        api_base_url = st.sidebar.text_input(
+            "API Base URL", value=env_api_base if env_api_base else default_api_base
+        )
+    else:
+        api_base_url = None
 
     # 모델 온도(temperature) 설정 - 모든 모델에 공통 적용
     temperature = st.sidebar.slider(
