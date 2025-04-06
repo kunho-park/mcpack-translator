@@ -27,8 +27,9 @@ def get_translator(
     Returns:
         BaseChatModel: 채팅 모델 인스턴스
     """
-    if api_base.strip() == "":
-        api_base = None
+    if isinstance(api_base, str):
+        if api_base.strip() == "":
+            api_base = None
     # 모델 제공자에 따라 적절한 LLM 인스턴스 생성
     if provider == "openai":
         return ChatOpenAI(

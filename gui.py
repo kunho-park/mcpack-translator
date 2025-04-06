@@ -166,7 +166,11 @@ def build_dictionary_from_files(
                 file_count += 1
 
         except Exception as e:
-            st.error(f"파일 처리 중 오류 발생: {en_file}, {str(e)}")
+            error_traceback = traceback.format_exc()
+            st.error(
+                f"파일 처리 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+            )
+            logger.error(error_traceback)
 
     return (
         translation_dictionary,
@@ -261,11 +265,17 @@ def build_dictionary_from_jar(
 
                         except Exception as e:
                             st.error(
-                                f"JAR 파일 내부 파일 처리 중 오류: {jar_path}, {en_file}, {str(e)}"
+                                f"JAR 파일 내부 파일 처리 중 오류: {jar_path}, {en_file}, {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
                             )
+                            error_traceback = traceback.format_exc()
+                            logger.error(error_traceback)
 
         except Exception as e:
-            st.error(f"JAR 파일 처리 중 오류: {jar_path}, {str(e)}")
+            st.error(
+                f"JAR 파일 처리 중 오류: {jar_path}, {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+            )
+            error_traceback = traceback.format_exc()
+            logger.error(error_traceback)
 
     return (
         translation_dictionary,
@@ -328,7 +338,11 @@ def process_modpack_directory(modpack_path):
 
                     en_us_files.append(extract_path)
         except Exception as e:
-            st.error(f"JAR 파일 처리 중 오류: {e}, {jar_path}")
+            st.error(
+                f"JAR 파일 처리 중 오류: {e}, {jar_path}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+            )
+            error_traceback = traceback.format_exc()
+            logger.error(error_traceback)
 
     return en_us_files, mods_jar_files
 
@@ -348,7 +362,11 @@ def extract_lang_content(file_path):
             st.error(f"지원되지 않는 파일 형식: {file_ext}")
             return {}
     except Exception as e:
-        st.error(f"파일 내용 추출 중 오류: {str(e)}")
+        st.error(
+            f"파일 내용 추출 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+        )
+        error_traceback = traceback.format_exc()
+        logger.error(error_traceback)
         return {}
 
 
@@ -370,7 +388,11 @@ def save_lang_content(file_path, data):
             st.error(f"지원되지 않는 파일 형식: {file_ext}")
             return False
     except Exception as e:
-        st.error(f"파일 저장 중 오류: {str(e)}")
+        st.error(
+            f"파일 저장 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+        )
+        error_traceback = traceback.format_exc()
+        logger.error(error_traceback)
         return False
 
 
@@ -493,7 +515,11 @@ def main():
                 f"커스텀 사전 로드 완료: {len(translation_dictionary)}개 항목"
             )
         except Exception as e:
-            st.sidebar.error(f"사전 로드 오류: {str(e)}")
+            st.sidebar.error(
+                f"사전 로드 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+            )
+            error_traceback = traceback.format_exc()
+            logger.error(error_traceback)
 
     # 번역 실행 버튼
     if st.button("번역 시작"):
@@ -787,8 +813,11 @@ def main():
                                         f"번역 결과 파일이 생성되지 않았습니다: {temp_output_path}"
                                     )
                             except Exception as e:
-                                st.error(f"파일 처리 중 오류 발생: {str(e)}")
-                                st.error(f"오류 상세: {traceback.format_exc()}")
+                                st.error(
+                                    f"파일 처리 중 오류 발생: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+                                )
+                                error_traceback = traceback.format_exc()
+                                logger.error(error_traceback)
                                 continue
 
                             # 번역 사전 저장
@@ -852,8 +881,9 @@ def main():
                         except Exception as e:
                             error_traceback = traceback.format_exc()
                             st.error(
-                                f"파일 번역 중 오류: {str(e)}\n\n상세 오류 정보:\n{error_traceback}"
+                                f"파일 번역 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
                             )
+                            logger.error(error_traceback)
 
                 # 리소스팩 생성
                 progress_bar.progress(95)
@@ -904,8 +934,9 @@ def main():
         except Exception as e:
             error_traceback = traceback.format_exc()
             st.error(
-                f"번역 중 오류 발생: {str(e)}\n\n상세 오류 정보:\n{error_traceback}"
+                f"파일 번역 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
             )
+            logger.error(error_traceback)
 
 
 if __name__ == "__main__":
