@@ -73,23 +73,6 @@ GUI를 통해 다음 작업을 수행할 수 있습니다:
 - LANG: 구버전 마인크래프트 언어 파일
 - SNBT: FTB 퀘스트 및 기타 데이터 파일
 
-## 프로젝트 구조
-
-```
-.
-├── minecraft_modpack_auto_translator/  # 핵심 라이브러리
-│   ├── __init__.py                    # 패키지 초기화
-│   ├── config.py                      # 설정 및 상수
-│   ├── graph.py                       # 번역 워크플로우 그래프
-│   ├── mc_lang_parser.py              # 언어 파일 파서
-│   ├── resourcepack.py                # 리소스팩 생성 유틸리티
-│   ├── translator.py                  # 번역 엔진 인터페이스
-│   └── parsers/                       # 다양한 파일 형식 파서
-├── gui.py                             # GUI 인터페이스
-├── pyproject.toml                     # 프로젝트 메타데이터
-└── README.md                          # 프로젝트 설명
-```
-
 ## 커스터마이징
 
 `minecraft_modpack_auto_translator/config.py` 파일에서 다음 설정을 조정할 수 있습니다:

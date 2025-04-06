@@ -8,7 +8,6 @@
 __version__ = "0.1.0"
 
 from .graph import create_translation_graph, translate_json_file
-from .mc_lang_parser import MCLangParser
 from .parsers import (
     BaseParser,
     JSONParser,
@@ -25,7 +24,6 @@ __all__ = [
     "translate_json_file",
     "get_translator",
     "create_resourcepack",
-    "MCLangParser",
     "JSONParser",
     "LangParser",
     "TxtParser",

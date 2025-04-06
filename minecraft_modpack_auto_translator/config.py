@@ -6,11 +6,6 @@ from dotenv import load_dotenv
 # .env 파일 로드
 load_dotenv()
 
-# OpenAI API 키 (환경 변수에서 가져옴)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
 # 언어 파일 경로
 LANGUAGE_FILES_PATH = os.path.join(os.path.dirname(__file__), "assets/versions/1.21.5")
 OFFICIAL_EN_LANG_FILE = json.load(
@@ -19,11 +14,6 @@ OFFICIAL_EN_LANG_FILE = json.load(
 OFFICIAL_KO_LANG_FILE = json.load(
     open(os.path.join(LANGUAGE_FILES_PATH, "ko_kr.json"), "r", encoding="utf-8")
 )
-
-# OpenAI 모델 설정
-EMBEDDING_MODEL = "bge-m3"
-EMBEDDING_OPENAI_BASE = "https://192.168.0.241:11434/v1"
-TRANSLATION_MODEL = "aya-expanse"
 
 FORMAT_CODE_PATTERN = r"[§&][0-9a-fk-or]"
 C_PLACEHOLDER_PATTERN = r"%(?:[sd]|1\$s)"
