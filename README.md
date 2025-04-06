@@ -19,25 +19,19 @@
 
 ### 자동 설치
 
+### 윈도우 자동 설치 방법
 
-Windows 사용자의 경우 `installer.bat` 파일을 실행하여 필요한 모든 종속성을 자동으로 설치할 수 있습니다.
+현재 자동 설치는 윈도우 환경에서만 지원됩니다.
 
-```bash
-# Windows에서 자동 설치
-installer.bat
-```
+1. [mcpack-translator-win.zip](https://github.com/kunho-park/mcpack-translator/releases/download/setup/mcpack-translator-win.zip) 파일을 다운로드합니다.
+2. 압축을 풀고 `update.bat` 파일을 실행하여 최신 버전으로 업데이트합니다.
+3. `run.bat` 파일을 실행하여 프로그램을 시작합니다.
+   (이후 실행 시에는 업데이트가 필요 없다면 `run.bat`만 실행하면 됩니다.)
 
 ### 수동 설치
 ```bash
 # 가상 환경 생성 및 활성화
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
-
-# 의존성 설치
-pip install -e .
+uv sync
 ```
 
 ## 환경 설정
