@@ -13,7 +13,7 @@
 
 ## 기본 요구 사항
 - [uv](https://github.com/astral-sh/uv)
-- OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상
+- OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상 혹은 Ollama
 
 ## 윈도우 자동 설치
 
