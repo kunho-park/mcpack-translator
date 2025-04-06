@@ -11,15 +11,11 @@
 - 고유명사 및 게임 용어 정확한 번역
 - GUI 인터페이스 제공
 
-## 설치
-
-### 요구 사항
-- Python 3.12 이상
+## 기본본 요구 사항
+- [uv](https://github.com/astral-sh/uv)
 - OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상
 
-### 윈도우 자동 설치 방법
-
-현재 자동 설치는 윈도우 환경에서만 지원됩니다.
+## 윈도우 자동 설치
 
 ### 설치 전 필수 프로그램
 
@@ -30,17 +26,19 @@
 
 위 프로그램들이 설치되어 있어야 자동 설치 스크립트가 정상적으로 작동합니다.
 
-### 설치 절차
+#### 설치 절차
 
 1. [mcpack-translator-win.zip](https://github.com/kunho-park/mcpack-translator/releases/download/setup/mcpack-translator-win.zip) 파일을 다운로드합니다.
 2. 압축을 풀고 `update.bat` 파일을 실행하여 최신 버전으로 업데이트합니다.
 3. `run.bat` 파일을 실행하여 프로그램을 시작합니다.
    (이후 실행 시에는 업데이트가 필요 없다면 `run.bat`만 실행하면 됩니다.)
 
-### 수동 설치
+## 수동 설치
 ```bash
-# 가상 환경 생성 및 활성화
+git clone https://github.com/kunho-park/mcpack-translator.git
+cd mcpack-translator
 uv sync
+streamlit run gui.py
 ```
 
 ## 환경 설정
@@ -59,11 +57,11 @@ GOOGLE_API_KEY=your_google_api_key_here
 GUI 인터페이스를 시작하려면:
 
 ```bash
-# Windows에서 GUI 실행
+# Windows에서 GUI 실행 (자동 설치 사용시)
 run.bat
 
 # 또는 직접 실행
-python gui.py
+streamlit run gui.py
 ```
 
 GUI를 통해 다음 작업을 수행할 수 있습니다:
