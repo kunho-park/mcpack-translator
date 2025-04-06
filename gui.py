@@ -690,33 +690,6 @@ def main():
                                 ),
                             )
 
-                            # 입출력 경로 디버깅 정보
-                            # 최근 처리된 파일 정보를 저장할 세션 상태 초기화
-                            if "recent_files" not in st.session_state:
-                                st.session_state.recent_files = []
-
-                            # 현재 파일 정보 추가 (최대 5개 유지)
-                            file_info = {
-                                "처리 중인 파일": en_file,
-                                "입력 파일 경로": input_file,
-                                "출력 파일 경로": output_file,
-                            }
-                            st.session_state.recent_files.insert(0, file_info)
-                            if len(st.session_state.recent_files) > 5:
-                                st.session_state.recent_files.pop()
-
-                            # expander 안에 최근 파일 정보 표시
-                            with st.expander(
-                                "최근 처리된 파일 정보 (클릭하여 확인)", expanded=False
-                            ):
-                                for idx, info in enumerate(
-                                    st.session_state.recent_files
-                                ):
-                                    st.write(f"**파일 #{idx + 1}**")
-                                    for key, value in info.items():
-                                        st.text(f"{key}: {value}")
-                                    st.divider()
-
                             # 이미 번역된 파일은 건너뛰기
                             if skip_translated and os.path.exists(output_file):
                                 status_text.text(
@@ -889,29 +862,37 @@ def main():
                 progress_bar.progress(95)
                 status_text.text("리소스팩 생성 중...")
 
-                resourcepack_zip = create_resourcepack(
-                    output_path,
-                    [
-                        output_path + "/mods/output",
-                    ],
-                    resourcepack_name + "_MOD_TRANSLATION",
-                )
+                resourcepack_zips = []
 
-                resourcepack_zip = create_resourcepack(
-                    output_path,
-                    [
-                        output_path + "/config/output",
-                    ],
-                    resourcepack_name + "_CONFIG_TRANSLATION",
-                )
+                if os.path.exists(output_path + "/mods/output"):
+                    resourcepack_zip = create_resourcepack(
+                        output_path,
+                        [
+                            output_path + "/mods/output",
+                        ],
+                        resourcepack_name + "_MOD_TRANSLATION",
+                    )
+                    resourcepack_zips.append(resourcepack_zip)
 
-                resourcepack_zip = create_resourcepack(
-                    output_path,
-                    [
-                        output_path + "/kubejs/output",
-                    ],
-                    resourcepack_name + "_KUBEJS_TRANSLATION",
-                )
+                if os.path.exists(output_path + "/config/output"):
+                    resourcepack_zip = create_resourcepack(
+                        output_path,
+                        [
+                            output_path + "/config/output",
+                        ],
+                        resourcepack_name + "_CONFIG_TRANSLATION",
+                    )
+                    resourcepack_zips.append(resourcepack_zip)
+
+                if os.path.exists(output_path + "/kubejs/output"):
+                    resourcepack_zip = create_resourcepack(
+                        output_path,
+                        [
+                            output_path + "/kubejs/output",
+                        ],
+                        resourcepack_name + "_KUBEJS_TRANSLATION",
+                    )
+                    resourcepack_zips.append(resourcepack_zip)
 
                 # 최종 진행 상황
                 progress_bar.progress(100)
@@ -928,8 +909,10 @@ def main():
                 st.success(
                     f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일이 번역되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
                 )
-                if resourcepack_zip:
-                    st.info(f"리소스팩이 생성되었습니다: {resourcepack_zip}")
+                if resourcepack_zips:
+                    st.info(
+                        f"리소스팩이 생성되었습니다! ({', '.join(resourcepack_zips)})"
+                    )
 
         except Exception as e:
             error_traceback = traceback.format_exc()

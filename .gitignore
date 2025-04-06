@@ -21,6 +21,7 @@ output/
 client/
 backup/
 database/
+test/
 
 
 *.log
