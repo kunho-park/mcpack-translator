@@ -11,7 +11,7 @@
 - 고유명사 및 게임 용어 정확한 번역
 - GUI 인터페이스 제공
 
-## 기본본 요구 사항
+## 기본 요구 사항
 - [uv](https://github.com/astral-sh/uv)
 - OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상
 
