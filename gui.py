@@ -459,13 +459,21 @@ def main():
     st.header("모드팩 파일 선택")
 
     # 폴더 선택 (실제로는 폴더 경로 입력)
-    modpack_path = st.text_input("모드팩 폴더 경로", "./client")
+    modpack_path = st.text_input(
+        "모드팩 폴더 경로",
+        "",
+        placeholder="폴더 경로를 입력해주세요. (예: C:\\Users\\<<이름>>\\Documents\\Minecraft\\mods\\my_modpack)",
+    )
 
     # 번역 결과, 기존 번역 자동 사전 구축 옵션
     build_dict_from_existing = st.checkbox("기존 번역에서 사전 자동 구축", value=True)
 
     # 번역 결과 출력 경로
-    output_path = st.text_input("번역 결과 출력 경로", "./process")
+    output_path = st.text_input(
+        "번역 결과 출력 경로",
+        "",
+        placeholder="경로를 입력해주세요. (예: C:\\Users\\<<이름>>\\Documents\\Minecraft\\mods\\my_modpack\\output)",
+    )
 
     # 옵션: 이미 번역된 파일은 건너뛰기
     skip_translated = st.checkbox("이미 번역된 파일은 건너뛰기", value=True)

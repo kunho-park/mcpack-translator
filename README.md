@@ -18,6 +18,8 @@
 - OpenAI API 키, Anthropic API 키, Google AI API 키 중 하나 이상
 
 ### 자동 설치
+
+
 Windows 사용자의 경우 `installer.bat` 파일을 실행하여 필요한 모든 종속성을 자동으로 설치할 수 있습니다.
 
 ```bash
