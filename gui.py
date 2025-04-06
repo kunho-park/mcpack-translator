@@ -676,9 +676,31 @@ def main():
                             )
 
                             # 입출력 경로 디버깅 정보
-                            st.text(f"처리 중인 파일: {en_file}")
-                            st.text(f"입력 파일 경로: {input_file}")
-                            st.text(f"출력 파일 경로: {output_file}")
+                            # 최근 처리된 파일 정보를 저장할 세션 상태 초기화
+                            if "recent_files" not in st.session_state:
+                                st.session_state.recent_files = []
+
+                            # 현재 파일 정보 추가 (최대 5개 유지)
+                            file_info = {
+                                "처리 중인 파일": en_file,
+                                "입력 파일 경로": input_file,
+                                "출력 파일 경로": output_file,
+                            }
+                            st.session_state.recent_files.insert(0, file_info)
+                            if len(st.session_state.recent_files) > 5:
+                                st.session_state.recent_files.pop()
+
+                            # expander 안에 최근 파일 정보 표시
+                            with st.expander(
+                                "최근 처리된 파일 정보 (클릭하여 확인)", expanded=False
+                            ):
+                                for idx, info in enumerate(
+                                    st.session_state.recent_files
+                                ):
+                                    st.write(f"**파일 #{idx + 1}**")
+                                    for key, value in info.items():
+                                        st.text(f"{key}: {value}")
+                                    st.divider()
 
                             # 이미 번역된 파일은 건너뛰기
                             if skip_translated and os.path.exists(output_file):
