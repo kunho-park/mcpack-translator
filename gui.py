@@ -9,6 +9,7 @@ import zipfile
 from glob import glob
 
 import streamlit as st
+from langchain_core.rate_limiters import InMemoryRateLimiter
 
 import minecraft_modpack_auto_translator
 from minecraft_modpack_auto_translator import create_resourcepack
@@ -467,6 +468,19 @@ def main():
         help="값이 낮을수록 더 창의성이 낮은 응답이, 높을수록 더 창의성이 높은 응답이 생성됩니다.",
     )
 
+    # API 속도 제한 설정
+    st.sidebar.subheader("API 속도 제한")
+    use_rate_limiter = st.sidebar.checkbox("API 속도 제한 사용", value=True)
+    rpm = st.sidebar.number_input(
+        "분당 요청 수(RPM)",
+        min_value=1,
+        max_value=1000,
+        value=60,
+        step=1,
+        disabled=not use_rate_limiter,
+        help="분당 최대 API 요청 횟수를 설정합니다. 값이 낮을수록 API 할당량을 절약할 수 있습니다.",
+    )
+
     # 커스텀 사전 업로드
     st.sidebar.header("커스텀 사전")
     custom_dict_file = st.sidebar.file_uploader(
@@ -541,13 +555,32 @@ def main():
                 # LLM 인스턴스 생성
                 status_text.text("모델 초기화 중...")
 
-                llm = get_translator(
-                    provider=model_provider.lower(),
-                    api_key=api_key,
-                    model_name=selected_model,
-                    api_base=api_base_url,
-                    temperature=temperature,
-                )
+                try:
+                    # Rate Limiter 설정
+                    rate_limiter = None
+                    if use_rate_limiter:
+                        # RPM을 RPS(초당 요청 수)로 변환
+                        rps = rpm / 60.0
+                        rate_limiter = InMemoryRateLimiter(
+                            requests_per_second=rps,
+                            check_every_n_seconds=0.1,
+                            max_bucket_size=10,
+                        )
+                        status_text.text(f"속도 제한: {rpm} RPM ({rps:.2f} RPS)")
+
+                    llm = get_translator(
+                        provider=model_provider.lower(),
+                        api_key=api_key,
+                        model_name=selected_model,
+                        api_base=api_base_url,
+                        temperature=temperature,
+                        rate_limiter=rate_limiter,
+                    )
+                except RuntimeError as e:
+                    st.error(
+                        f"모델 초기화 사용 중 오류가 발생했습니다.\n\n오류 메시지: {e}"
+                    )
+                    return
 
                 # 출력 디렉토리 생성
                 os.makedirs(output_path, exist_ok=True)
@@ -729,12 +762,100 @@ def main():
                                 os.makedirs(output_dir, exist_ok=True)
 
                                 # 번역 실행
-                                translation_dictionary = minecraft_modpack_auto_translator.translate_json_file(
-                                    input_path=input_file,
-                                    output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
-                                    custom_dictionary_dict=translation_dictionary,
-                                    llm=llm,
-                                )
+                                try:
+                                    translation_dictionary = minecraft_modpack_auto_translator.translate_json_file(
+                                        input_path=input_file,
+                                        output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
+                                        custom_dictionary_dict=translation_dictionary,
+                                        llm=llm,
+                                    )
+                                except RuntimeError as api_error:
+                                    # API 할당량 초과 또는 심각한 LLM 오류 처리
+                                    error_msg = str(api_error).lower()
+
+                                    if any(
+                                        term in error_msg
+                                        for term in [
+                                            "rate limit",
+                                            "quota",
+                                            "exceeded",
+                                            "too many requests",
+                                            "429",
+                                        ]
+                                    ):
+                                        st.error(
+                                            f"API 할당량 초과로 번역이 중단되었습니다. 잠시 후 다시 시도해주세요.\n\n오류 메시지: {api_error}"
+                                        )
+                                    elif any(
+                                        term in error_msg
+                                        for term in [
+                                            "auth",
+                                            "key",
+                                            "permission",
+                                            "unauthorized",
+                                            "401",
+                                            "403",
+                                        ]
+                                    ):
+                                        st.error(
+                                            f"API 인증 오류가 발생했습니다. API 키를 확인해주세요.\n\n오류 메시지: {api_error}"
+                                        )
+                                    elif any(
+                                        term in error_msg
+                                        for term in [
+                                            "server",
+                                            "500",
+                                            "502",
+                                            "503",
+                                            "504",
+                                        ]
+                                    ):
+                                        st.error(
+                                            f"API 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\n\n오류 메시지: {api_error}"
+                                        )
+                                    elif any(
+                                        term in error_msg
+                                        for term in [
+                                            "context",
+                                            "token",
+                                            "length",
+                                            "too long",
+                                        ]
+                                    ):
+                                        st.error(
+                                            f"텍스트가 너무 길어 번역할 수 없습니다. 더 작은 파일로 분할하거나 다른 모델을 사용해보세요.\n\n오류 메시지: {api_error}"
+                                        )
+                                    else:
+                                        st.error(
+                                            f"API 호출 중 오류가 발생했습니다.\n\n오류 메시지: {api_error}"
+                                        )
+
+                                    # 중간 결과 및 사전 저장
+                                    st.warning(
+                                        "오류 발생 시점까지의 번역 결과를 저장합니다..."
+                                    )
+
+                                    # 사전 저장
+                                    dict_path = os.path.join(
+                                        output_path,
+                                        "total_dictionary",
+                                        f"{uuid_str}_error_dictionary.json",
+                                    )
+                                    os.makedirs(
+                                        os.path.dirname(dict_path), exist_ok=True
+                                    )
+                                    with open(dict_path, "w", encoding="utf-8") as f:
+                                        json.dump(
+                                            translation_dictionary,
+                                            f,
+                                            ensure_ascii=False,
+                                            indent=4,
+                                        )
+
+                                    st.info(
+                                        f"현재까지의 번역 사전이 {dict_path}에 저장되었습니다."
+                                    )
+                                    return
 
                                 # 원래 파일 형식으로 변환
                                 if os.path.exists(temp_output_path):

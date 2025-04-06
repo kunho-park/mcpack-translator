@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os
 import re
 import traceback
 from typing import List
@@ -348,18 +349,24 @@ def translate_text(state):
 
             custom_parser = CustomOutputParser()
             chain = prompt_template | llm | custom_parser | parser
-            result: TranslationResponse = chain.invoke(
-                {
-                    "text": text_to_translate,
-                    "dictionary": dictionary_text,
-                    "format_instructions": parser.get_format_instructions(),
-                    "placeholders": placeholders_text,
-                    "additional_rules": additional_rules,
-                    "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
-                    "translation_rules": translation_rules,
-                },
-                config={"callbacks": [langfuse_handler]},
-            )
+
+            try:
+                result: TranslationResponse = chain.invoke(
+                    {
+                        "text": text_to_translate,
+                        "dictionary": dictionary_text,
+                        "format_instructions": parser.get_format_instructions(),
+                        "placeholders": placeholders_text,
+                        "additional_rules": additional_rules,
+                        "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
+                        "translation_rules": translation_rules,
+                    },
+                    config={"callbacks": [langfuse_handler]},
+                )
+            except Exception as api_error:
+                raise RuntimeError(
+                    f"API 호출 중 오류가 발생하여 번역이 중단되었습니다: {api_error}"
+                )
 
             if (
                 hasattr(result, "new_dictionary_entries")
@@ -435,6 +442,10 @@ def translate_text(state):
             temperature += 0.1
             additional_rules = "\n\n### 중요: json 형식을 지키지 않아 파싱 오류가 발생했습니다.\nformat_instructions을 반드시 지켜서 다시 작성 해주세요."
             logger.error(f"파싱 오류 발생: {e}, 프롬프트에 강조구문 추가 후 다시 시도")
+        except RuntimeError as e:
+            # RuntimeError는 번역을 계속할 수 없는 심각한 오류이므로 바로 예외 던지기
+            logger.error(f"심각한 오류 발생으로 번역 중단: {e}")
+            raise
 
     # 모든 시도 후에도 플레이스홀더 문제가 있다면 경고 로그 남김
     missing_placeholders = []
@@ -536,20 +547,59 @@ def translate_json_file(
             translated_data[key] = registry.process_item(
                 input_path, key, value, context
             )
+        except RuntimeError as e:
+            # API 할당량 초과나 심각한 LLM 오류 발생 시
+            logger.error(f"LLM API 오류로 번역이 중단되었습니다: {e}")
+
+            # 중간 결과 저장
+            try:
+                logger.info(
+                    f"오류 발생 시점까지의 번역 결과를 {output_path}에 저장합니다."
+                )
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(translated_data, f, ensure_ascii=False, indent=4)
+            except Exception as save_error:
+                logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
+
+            # 번역 중단 전에 사전도 저장
+            try:
+                dict_output_path = f"{os.path.splitext(output_path)[0]}_dictionary.json"
+                logger.info(f"번역 사전을 {dict_output_path}에 저장합니다.")
+                with open(dict_output_path, "w", encoding="utf-8") as f:
+                    json.dump(translation_dictionary, f, ensure_ascii=False, indent=4)
+            except Exception as dict_save_error:
+                logger.error(f"사전 저장 중 오류 발생: {dict_save_error}")
+
+            # 오류 전파
+            raise
         except Exception as e:
-            logger.error(f"오류 발생: {e}")
-            print(traceback.format_exc())
+            logger.error(f"항목 '{key}' 번역 중 오류 발생: {e}")
+            logger.debug(traceback.format_exc())
+            # 일반 오류는 계속 진행
 
         idx += 1
         if idx % 100 == 0:
             # 주기적으로 중간 결과 저장
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(translated_data, f, ensure_ascii=False, indent=4)
+            try:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(translated_data, f, ensure_ascii=False, indent=4)
+            except Exception as save_error:
+                logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
 
     # 번역된 데이터 저장
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(translated_data, f, ensure_ascii=False, indent=4)
-
-    logger.info(f"번역 완료. 결과가 {output_path}에 저장되었습니다.")
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(translated_data, f, ensure_ascii=False, indent=4)
+        logger.info(f"번역 완료. 결과가 {output_path}에 저장되었습니다.")
+    except Exception as save_error:
+        logger.error(f"최종 결과 저장 중 오류 발생: {save_error}")
+        # 대체 경로에 저장 시도
+        try:
+            backup_path = f"{output_path}.backup.json"
+            with open(backup_path, "w", encoding="utf-8") as f:
+                json.dump(translated_data, f, ensure_ascii=False, indent=4)
+            logger.info(f"백업 결과가 {backup_path}에 저장되었습니다.")
+        except Exception as backup_save_error:
+            logger.error(f"백업 저장 중 오류 발생: {backup_save_error}")
 
     return translation_dictionary
