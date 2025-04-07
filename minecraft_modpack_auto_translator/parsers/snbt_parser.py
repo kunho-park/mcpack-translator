@@ -8,7 +8,7 @@ import re
 from typing import Any, Dict
 
 import ftb_snbt_lib as slib
-from ftb_snbt_lib.tag import Byte, Compound, Double, Integer, Long, Short, String
+from ftb_snbt_lib.tag import Bool, Compound, Double, Integer, Long, String
 from ftb_snbt_lib.tag import List as SNBTList
 
 from .base_parser import BaseParser
@@ -40,6 +40,36 @@ class SNBTParser(BaseParser):
         else:
             return obj
 
+    @staticmethod
+    def is_valid_snbt_key(key: str) -> bool:
+        """
+        SNBT 키가 따옴표 없이 사용할 수 있는 유효한 문자만 포함하는지 확인합니다.
+        유효한 문자: 0-9, A-Z, a-z, _, -, ., +
+
+        Args:
+            key: 확인할 키 문자열
+
+        Returns:
+            bool: 키가 유효한 문자만 포함하는 경우 True, 그렇지 않으면 False
+        """
+        return bool(re.match(r"^[0-9A-Za-z_\-\.+]+$", key))
+
+    @staticmethod
+    def format_snbt_key(key: str) -> str:
+        """
+        SNBT 키를 적절한 형식으로 변환합니다.
+        콜론(:)이 포함된 경우 따옴표로 묶습니다.
+
+        Args:
+            key: 변환할 키 문자열
+
+        Returns:
+            str: 변환된 키 문자열
+        """
+        if ":" in key or not SNBTParser.is_valid_snbt_key(key):
+            return f'"{key}"'
+        return key
+
     @classmethod
     def load(cls, content: str) -> Dict[str, Any]:
         """
@@ -65,14 +95,10 @@ class SNBTParser(BaseParser):
             SNBT 데이터 타입으로 변환된 값
         """
         if isinstance(value, bool):
-            return value  # ftb_snbt_lib는 Python bool을 자동으로 처리
+            return Bool(value)
         elif isinstance(value, int):
             # 범위에 따라 적절한 정수 타입 사용
-            if -128 <= value <= 127:
-                return Byte(value)
-            elif -32768 <= value <= 32767:
-                return Short(value)
-            elif -2147483648 <= value <= 2147483647:
+            if -2147483648 <= value <= 2147483647:
                 return Integer(value)
             else:
                 return Long(value)
@@ -92,7 +118,16 @@ class SNBTParser(BaseParser):
             # 딕셔너리 내 모든 값을 SNBT 타입으로 변환
             snbt_dict = {}
             for k, v in value.items():
-                snbt_dict[k] = SNBTParser.convert_to_snbt_type(v)
+                # 키가 문자열이 아니면 문자열로 변환
+                if not isinstance(k, str):
+                    k = str(k)
+
+                # 키 형식 변환 (콜론이 포함된 경우 따옴표로 묶음)
+                formatted_key = SNBTParser.format_snbt_key(k)
+
+                # 값을 SNBT 타입으로 변환
+                snbt_dict[formatted_key] = SNBTParser.convert_to_snbt_type(v)
+
             return Compound(snbt_dict)
         else:
             # 변환할 수 없는 타입은 문자열로 처리

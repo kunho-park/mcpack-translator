@@ -150,9 +150,7 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
 </translation_rules>"""
 
 DICTIONARY_INSTRUCTIONS = """1. 번역 중 중요한 용어를 발견하면 new_dictionary_entries 목록에 추가하세요.
-2. 일반적인 단어, 구문 또는 문장은 추가하지 마세요.
-3. 실제 번역에 사용된 단어로 ko에 추가하세요.
-3. 게임 용어나 고유명사 추가에 집중하세요.
+2. 실제 번역에 사용된 단어로 ko에 추가하세요.
 
 예시:
 O {"en": "Iridium", "ko": "이리듐"}

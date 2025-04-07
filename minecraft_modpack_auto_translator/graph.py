@@ -33,13 +33,15 @@ from .config import (
 from .loaders import (
     DefaultLoader,
     DictLoader,
-    FTBQuestsChapterLoader,
+    FTBQuestsChapterQuestsLoader,
+    FTBQuestsChapterTitleLoader,
     ListLoader,
     LoaderRegistry,
     PatchouliBooksLoader,
     StringLoader,
     TConstructBooksLoader,
     TranslationContext,
+    WhiteListLoader,
 )
 
 registry = LoaderRegistry()
@@ -47,8 +49,10 @@ registry = LoaderRegistry()
 # 로더 등록 (우선순위 순서대로)
 
 # 특수 케이스 먼저
+registry.register(WhiteListLoader())
 registry.register(PatchouliBooksLoader())
-registry.register(FTBQuestsChapterLoader())
+registry.register(FTBQuestsChapterQuestsLoader())
+registry.register(FTBQuestsChapterTitleLoader())
 registry.register(TConstructBooksLoader())
 
 # 일반 케이스
