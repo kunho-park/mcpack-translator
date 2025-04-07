@@ -25,9 +25,7 @@ class WhiteListLoader(BaseLoader):
         """
         for path, whitelist_key in self.whitelist:
             if path in input_path:
-                if whitelist_key == key:
-                    return False
-                else:
+                if whitelist_key != key:
                     return True
         return False
 
