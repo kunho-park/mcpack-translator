@@ -331,7 +331,12 @@ def process_modpack_directory(modpack_path):
                     for f in jar.namelist()
                     if os.path.splitext(f)[1] in supported_extensions
                     and ("en_us" in f.lower() or "en_US" in f.lower())
-                    and (any(whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST) or not DIR_FILTER_WHITELIST)
+                    and (
+                        any(
+                            whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST
+                        )
+                        or not DIR_FILTER_WHITELIST
+                    )
                 ]
 
                 for lang_file in lang_files:
@@ -663,6 +668,14 @@ def main():
                         file_types["kubejs"].append(file_path)
                     else:
                         file_types["mods"].append(file_path)
+
+                        # 파일 타입별 출력 디렉토리 생성
+                with open(
+                    os.path.join(output_path, "processing_info.json"),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    json.dump(file_types, f, ensure_ascii=False, indent=4)
 
                 # 카테고리별 번역 진행
                 total_files = len(en_us_files)
