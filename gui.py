@@ -344,7 +344,7 @@ def process_modpack_directory(modpack_path):
                     # 임시 디렉토리에 파일 추출
                     extract_path = os.path.join(
                         extract_dir, os.path.basename(jar_path), lang_file
-                    )
+                    ).replace("\\", "/")
                     os.makedirs(os.path.dirname(extract_path), exist_ok=True)
 
                     with (
@@ -380,7 +380,7 @@ def extract_lang_content(file_path):
             return {}
     except Exception as e:
         st.error(
-            f"파일 내용 추출 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+            f"파일 내용 추출 중 오류: {file_path}, {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
         )
         error_traceback = traceback.format_exc()
         logger.error(error_traceback)
