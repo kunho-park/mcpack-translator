@@ -297,6 +297,7 @@ def process_modpack_directory(modpack_path):
     # config 폴더 내 파일 검색
     config_files = glob(os.path.join(modpack_path, "config/**/*.*"), recursive=True)
     for f in config_files:
+        f = f.replace("\\", "/")
         file_ext = os.path.splitext(f)[1]
         if file_ext in supported_extensions and any(
             whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST
@@ -308,6 +309,7 @@ def process_modpack_directory(modpack_path):
     # kubejs 폴더 내 파일 검색
     kubejs_files = glob(os.path.join(modpack_path, "kubejs/**/*.*"), recursive=True)
     for f in kubejs_files:
+        f = f.replace("\\", "/")
         file_ext = os.path.splitext(f)[1]
         if file_ext in supported_extensions and any(
             whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST
