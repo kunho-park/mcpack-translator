@@ -17,6 +17,8 @@ from minecraft_modpack_auto_translator.config import (
     DICTIONARY_PREFIX_WHITELIST,
     DICTIONARY_SUFFIX_BLACKLIST,
     DIR_FILTER_WHITELIST,
+    OFFICIAL_EN_LANG_FILE,
+    OFFICIAL_KO_LANG_FILE,
 )
 from minecraft_modpack_auto_translator.translator import get_translator
 
@@ -540,6 +542,26 @@ def main():
     translation_dictionary = {}
     translation_dictionary_lowercase = {}
 
+    # 공식 마인크래프트 번역 파일에서 사전 구축
+    try:
+        # 영어-한국어 매핑 생성
+        for key, en_value in OFFICIAL_EN_LANG_FILE.items():
+            if key in OFFICIAL_KO_LANG_FILE:
+                ko_value = OFFICIAL_KO_LANG_FILE[key]
+                if en_value and ko_value:  # 빈 값이 아닌 경우에만 추가
+                    translation_dictionary[en_value] = ko_value
+                    translation_dictionary_lowercase[en_value.lower()] = en_value
+
+        st.sidebar.success(
+            f"공식 마인크래프트 번역 사전 로드 완료: {len(translation_dictionary)}개 항목"
+        )
+    except Exception as e:
+        st.sidebar.warning(f"공식 번역 파일 로드 오류: {str(e)}")
+        logger.warning(f"공식 번역 파일 로드 오류: {str(e)}")
+
+    else:
+        st.sidebar.info("공식 마인크래프트 번역 파일을 찾을 수 없습니다.")
+        logger.info("공식 마인크래프트 번역 파일을 찾을 수 없습니다.")
     if custom_dict_file is not None:
         try:
             translation_dictionary = json.load(custom_dict_file)
