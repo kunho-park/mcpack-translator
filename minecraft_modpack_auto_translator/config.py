@@ -24,6 +24,10 @@ MINECRAFT_ITEM_CODE_PATTERN = r"[a-z_]+:[a-z_]+"
 
 ADDED_DICTIONARY_ENTRIES = []
 
+DIR_FILTER_WHITELIST = [
+    "/ftbquests/quests/chapters/",
+]
+
 # 기본 영어 단어 블랙리스트
 DICTIONARY_BLACKLIST = [
     "with",

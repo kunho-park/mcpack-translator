@@ -16,6 +16,7 @@ from minecraft_modpack_auto_translator import create_resourcepack
 from minecraft_modpack_auto_translator.config import (
     DICTIONARY_PREFIX_WHITELIST,
     DICTIONARY_SUFFIX_BLACKLIST,
+    DIR_FILTER_WHITELIST,
 )
 from minecraft_modpack_auto_translator.translator import get_translator
 
@@ -298,14 +299,22 @@ def process_modpack_directory(modpack_path):
     for f in config_files:
         file_ext = os.path.splitext(f)[1]
         if file_ext in supported_extensions and ("en_us" in f or "en_US" in f):
-            en_us_files.append(f)
+            # DIR_FILTER_WHITELIST 중 하나라도 포함되어 있으면 리스트에 추가
+            if any(whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST):
+                en_us_files.append(f)
+            else:
+                en_us_files.append(f)
 
     # kubejs 폴더 내 파일 검색
     kubejs_files = glob(os.path.join(modpack_path, "kubejs/**/*.*"), recursive=True)
     for f in kubejs_files:
         file_ext = os.path.splitext(f)[1]
         if file_ext in supported_extensions and ("en_us" in f or "en_US" in f):
-            en_us_files.append(f)
+            # DIR_FILTER_WHITELIST 중 하나라도 포함되어 있으면 리스트에 추가
+            if any(whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST):
+                en_us_files.append(f)
+            else:
+                en_us_files.append(f)
 
     # mods 폴더 내 jar 파일 검색
     mods_jar_files = glob(os.path.join(modpack_path, "mods/*.jar"))
@@ -322,6 +331,7 @@ def process_modpack_directory(modpack_path):
                     for f in jar.namelist()
                     if os.path.splitext(f)[1] in supported_extensions
                     and ("en_us" in f.lower() or "en_US" in f.lower())
+                    and (any(whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST) or not DIR_FILTER_WHITELIST)
                 ]
 
                 for lang_file in lang_files:
