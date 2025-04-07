@@ -72,7 +72,6 @@ def add_to_dictionary(
     en_value, ko_value, translation_dictionary, translation_dictionary_lowercase
 ):
     try:
-        """번역 사전에 항목을 추가합니다."""
         if en_value.lower() in translation_dictionary_lowercase:
             target = translation_dictionary[
                 translation_dictionary_lowercase[en_value.lower()]
