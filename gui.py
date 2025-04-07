@@ -71,40 +71,46 @@ def get_parser_by_extension(extension):
 def add_to_dictionary(
     en_value, ko_value, translation_dictionary, translation_dictionary_lowercase
 ):
-    """번역 사전에 항목을 추가합니다."""
-    if en_value.lower() in translation_dictionary_lowercase:
-        target = translation_dictionary[
-            translation_dictionary_lowercase[en_value.lower()]
-        ]
-        if isinstance(target, list):
-            if ko_value not in target:
-                translation_dictionary[
-                    translation_dictionary_lowercase[en_value.lower()]
-                ].append(ko_value)
-        elif isinstance(target, str):
-            if (
-                translation_dictionary[
-                    translation_dictionary_lowercase[en_value.lower()]
-                ]
-                != ko_value
-            ):
-                translation_dictionary[
-                    translation_dictionary_lowercase[en_value.lower()]
-                ] = [
+    try:
+        """번역 사전에 항목을 추가합니다."""
+        if en_value.lower() in translation_dictionary_lowercase:
+            target = translation_dictionary[
+                translation_dictionary_lowercase[en_value.lower()]
+            ]
+            if isinstance(target, list):
+                if ko_value not in target:
                     translation_dictionary[
                         translation_dictionary_lowercase[en_value.lower()]
-                    ],
-                    ko_value,
-                ]
+                    ].append(ko_value)
+            elif isinstance(target, str):
+                if (
+                    translation_dictionary[
+                        translation_dictionary_lowercase[en_value.lower()]
+                    ]
+                    != ko_value
+                ):
+                    translation_dictionary[
+                        translation_dictionary_lowercase[en_value.lower()]
+                    ] = [
+                        translation_dictionary[
+                            translation_dictionary_lowercase[en_value.lower()]
+                        ],
+                        ko_value,
+                    ]
+            else:
+                st.error(
+                    f"translation_dictionary[{en_value.lower()}]의 타입이 예상과 다릅니다: {type(translation_dictionary[en_value.lower()])}"
+                )
         else:
-            st.error(
-                f"translation_dictionary[{en_value.lower()}]의 타입이 예상과 다릅니다: {type(translation_dictionary[en_value.lower()])}"
-            )
-    else:
-        translation_dictionary[en_value] = ko_value
-        translation_dictionary_lowercase[en_value.lower()] = en_value
+            translation_dictionary[en_value] = ko_value
+            translation_dictionary_lowercase[en_value.lower()] = en_value
 
-    return translation_dictionary, translation_dictionary_lowercase
+        return translation_dictionary, translation_dictionary_lowercase
+    except Exception:
+        logger.error(f"번역 사전 추가 중 오류: {en_value}, {ko_value}")
+        error_traceback = traceback.format_exc()
+        logger.error(error_traceback)
+        return translation_dictionary, translation_dictionary_lowercase
 
 
 def build_dictionary_from_files(
