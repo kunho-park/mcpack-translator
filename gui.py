@@ -559,9 +559,6 @@ def main():
         st.sidebar.warning(f"공식 번역 파일 로드 오류: {str(e)}")
         logger.warning(f"공식 번역 파일 로드 오류: {str(e)}")
 
-    else:
-        st.sidebar.info("공식 마인크래프트 번역 파일을 찾을 수 없습니다.")
-        logger.info("공식 마인크래프트 번역 파일을 찾을 수 없습니다.")
     if custom_dict_file is not None:
         try:
             translation_dictionary = json.load(custom_dict_file)
