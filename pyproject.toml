@@ -17,7 +17,6 @@ dependencies = [
     "langchain-google-genai>=2.1.2",
     "langchain-ollama>=0.3.0",
     "langchain-openai>=0.3.11",
-    "langfuse>=2.60.2",
     "langgraph>=0.3.21",
     "openai>=1.70.0",
     "python-dotenv>=1.1.0",
@@ -26,6 +25,3 @@ dependencies = [
     "requests>=2.32.3",
     "streamlit>=1.44.1",
 ]
-
-[dependency-groups]
-dev = ["ipykernel>=6.29.5", "ipywidgets>=8.1.5"]

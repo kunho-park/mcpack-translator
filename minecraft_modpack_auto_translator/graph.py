@@ -12,7 +12,6 @@ from langchain.schema.output_parser import OutputParserException
 from langchain_core.language_models import BaseChatModel
 from langchain_core.output_parsers import BaseOutputParser, PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
-from langfuse.callback import CallbackHandler
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 from rank_bm25 import BM25Okapi
@@ -55,12 +54,6 @@ registry.register(ListLoader())
 registry.register(StringLoader())
 registry.register(DictLoader())
 registry.register(DefaultLoader())  # 기본 로더는 항상 마지막
-
-langfuse_handler = CallbackHandler(
-    public_key="pk-lf-4f8f71f2-cf51-494c-ab34-9111c2ae3238",
-    secret_key="sk-lf-3cd6fff8-d656-4854-9559-bddce523f93b",
-    host="http://localhost:3000",
-)
 
 # 로거 설정
 logger = logging.getLogger(__name__)
@@ -361,7 +354,6 @@ def translate_text(state):
                         "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
                         "translation_rules": translation_rules,
                     },
-                    config={"callbacks": [langfuse_handler]},
                 )
             except Exception as api_error:
                 raise RuntimeError(

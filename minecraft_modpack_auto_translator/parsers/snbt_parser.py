@@ -66,7 +66,6 @@ class SNBTParser(BaseParser):
         # & 문자 치환 적용
         json_data = cls.replace_ampersand(data)
 
-        # SNBT 데이터로 변환
-        snbt_data = slib.loads(json.dumps(json_data, ensure_ascii=False))
+        json_str = json.dumps(json_data, ensure_ascii=False)
 
-        return json.dumps(snbt_data, indent=4, ensure_ascii=False)
+        return slib.dumps(json_str)
