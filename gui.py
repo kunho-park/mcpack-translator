@@ -549,8 +549,12 @@ def main():
             if key in OFFICIAL_KO_LANG_FILE:
                 ko_value = OFFICIAL_KO_LANG_FILE[key]
                 if en_value and ko_value:  # 빈 값이 아닌 경우에만 추가
-                    translation_dictionary[en_value] = ko_value
-                    translation_dictionary_lowercase[en_value.lower()] = en_value
+                    add_to_dictionary(
+                        en_value,
+                        ko_value,
+                        translation_dictionary,
+                        translation_dictionary_lowercase,
+                    )
 
         st.sidebar.success(
             f"공식 마인크래프트 번역 사전 로드 완료: {len(translation_dictionary)}개 항목"
