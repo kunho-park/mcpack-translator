@@ -33,6 +33,7 @@ from .config import (
 from .loaders import (
     DefaultLoader,
     DictLoader,
+    FTBQuestsChapterLoader,
     ListLoader,
     LoaderRegistry,
     PatchouliBooksLoader,
@@ -47,6 +48,7 @@ registry = LoaderRegistry()
 
 # 특수 케이스 먼저
 registry.register(PatchouliBooksLoader())
+registry.register(FTBQuestsChapterLoader())
 registry.register(TConstructBooksLoader())
 
 # 일반 케이스

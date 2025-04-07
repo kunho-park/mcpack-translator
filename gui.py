@@ -495,7 +495,7 @@ def main():
         "모드팩 폴더 경로",
         "",
         placeholder="폴더 경로를 입력해주세요. (예: C:\\Users\\<<이름>>\\Documents\\Minecraft\\mods\\my_modpack)",
-    )
+    ).replace("\\", "/")
 
     # 번역 결과, 기존 번역 자동 사전 구축 옵션
     build_dict_from_existing = st.checkbox("기존 번역에서 사전 자동 구축", value=True)
@@ -505,7 +505,7 @@ def main():
         "번역 결과 출력 경로",
         "",
         placeholder="경로를 입력해주세요. (예: C:\\Users\\<<이름>>\\Documents\\Minecraft\\mods\\my_modpack\\output)",
-    )
+    ).replace("\\", "/")
 
     # 옵션: 이미 번역된 파일은 건너뛰기
     skip_translated = st.checkbox("이미 번역된 파일은 건너뛰기", value=True)

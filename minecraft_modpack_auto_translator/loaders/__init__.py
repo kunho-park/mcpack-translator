@@ -2,6 +2,7 @@ from .base_loader import BaseLoader
 from .context import TranslationContext
 from .default_loader import DefaultLoader
 from .dict_loader import DictLoader
+from .ftbquests_chapter_loader import FTBQuestsChapterLoader
 from .list_loader import ListLoader
 from .patchouli_books_loader import PatchouliBooksLoader
 from .registry import LoaderRegistry
@@ -19,4 +20,5 @@ __all__ = [
     "PatchouliBooksLoader",
     "TranslationContext",
     "TConstructBooksLoader",
+    "FTBQuestsChapterLoader",
 ]
