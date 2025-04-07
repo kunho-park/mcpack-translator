@@ -29,7 +29,6 @@ class ListLoader(BaseLoader):
         리스트 내 각 문자열 항목을 번역합니다.
         """
         translation_graph = context.translation_graph
-        custom_dictionary_dict = context.custom_dictionary_dict
         llm = context.llm
 
         if not translation_graph:
@@ -50,8 +49,9 @@ class ListLoader(BaseLoader):
                 state = translation_graph.invoke(
                     {
                         "text": processed_item,
-                        "custom_dictionary_dict": custom_dictionary_dict,
+                        "custom_dictionary_dict": context.custom_dictionary_dict,
                         "llm": llm,
+                        "context": context,
                     }
                 )
 

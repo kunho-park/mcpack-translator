@@ -1,7 +1,6 @@
 import copy
 import json
 import logging
-import os
 import re
 import traceback
 from typing import List
@@ -125,70 +124,30 @@ def restore_special_formats(text, placeholder_map):
     return restored_text
 
 
-translation_dictionary = {}
-# 중복 체크를 위한 리스트
-translation_dictionary_lowercase = {}
-
-
 # 텍스트 분석 및 특수 형식 추출
 def analyze_text(state):
-    global translation_dictionary, translation_dictionary_lowercase
-    translation_dictionary = state["custom_dictionary_dict"]
-    translation_dictionary_lowercase = {
-        k.lower(): k for k, v in translation_dictionary.items()
-    }
     text = state["text"]
     replaced_text, placeholder_map = extract_special_formats(text)
+
+    # TranslationContext 객체가 있으면 사전 초기화
+    context = state.get("context")
+    if context:
+        context.initialize_dictionaries()
 
     return {
         "text": text,
         "replaced_text": replaced_text,
         "placeholder_map": placeholder_map,
         "extracted_entities": [],
+        "context": context,
     }
-
-
-def add_to_dictionary(en_value, ko_value):
-    global translation_dictionary, translation_dictionary_lowercase
-    try:
-        if en_value.lower() in translation_dictionary_lowercase:
-            target = translation_dictionary[
-                translation_dictionary_lowercase[en_value.lower()]
-            ]
-            if isinstance(target, list):
-                if ko_value not in target:
-                    translation_dictionary[
-                        translation_dictionary_lowercase[en_value.lower()]
-                    ].append(ko_value)
-            elif isinstance(target, str):
-                if (
-                    translation_dictionary[
-                        translation_dictionary_lowercase[en_value.lower()]
-                    ]
-                    != ko_value
-                ):
-                    translation_dictionary[
-                        translation_dictionary_lowercase[en_value.lower()]
-                    ] = [
-                        translation_dictionary[
-                            translation_dictionary_lowercase[en_value.lower()]
-                        ],
-                        ko_value,
-                    ]
-            else:
-                raise ValueError(
-                    f"translation_dictionary[{en_value.lower()}]의 타입이 예상과 다릅니다: {type(translation_dictionary[en_value.lower()])}"
-                )
-        else:
-            translation_dictionary[en_value] = ko_value
-            translation_dictionary_lowercase[en_value.lower()] = en_value
-    except Exception as e:
-        logger.error(f"오류 발생: {e}")
 
 
 # RAG에서 번역 정보 검색
 def retrieve_translations(state):
-    global translation_dictionary
+    context = state["context"]
+    context.initialize_dictionaries()
+    translation_dictionary = context.translation_dictionary
 
     dictionary = []
     text = state["replaced_text"]
@@ -257,6 +216,19 @@ def translate_text(state):
     text_to_translate = state["replaced_text"]
     text_replaced_with_korean_dictionary = state["replaced_text"]
     llm: BaseChatModel = state["llm"]
+    context = state["context"]
+    context.initialize_dictionaries()
+    translation_dictionary = context.translation_dictionary
+    translation_dictionary_lowercase = context.translation_dictionary_lowercase
+
+    restored_text = text_to_translate
+
+    # 플레이스홀더 복원
+    for token, placeholder in state["placeholder_map"].items():
+        restored_text = restored_text.replace(token, "")
+
+    if restored_text.strip() == "":
+        return {**state, "translated_text": text_to_translate}
 
     temp_placeholders = {}
     placeholder_idx = 1
@@ -389,7 +361,9 @@ def translate_text(state):
                                         break
 
                         if adding:
-                            add_to_dictionary(entry.en.lower(), entry.ko.lower())
+                            context.add_to_dictionary(
+                                entry.en.lower(), entry.ko.lower()
+                            )
                             logger.info(
                                 f"사전에 추가됨: {entry.en.lower()} -> {entry.ko.lower()}"
                             )
@@ -481,6 +455,7 @@ def create_translation_graph():
         translated_text: NotRequired[str]
         llm: NotRequired[BaseChatModel]
         restored_text: NotRequired[str]
+        context: NotRequired[TranslationContext]
 
     # 워크플로우 그래프 정의
     workflow = StateGraph(TranslationState)
@@ -510,13 +485,6 @@ def translate_json_file(
     custom_dictionary_dict={},
     llm=None,
 ):
-    global translation_dictionary, translation_dictionary_lowercase
-
-    translation_dictionary = {}
-    translation_dictionary_lowercase = {}
-
-    # 로더 레지스트리 초기화
-
     # 입력 JSON 파일 로드
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -541,34 +509,12 @@ def translate_json_file(
     idx = 0
     for key, value in tqdm(list(data.items()), desc="번역 진행률"):
         try:
-            # 레지스트리를 통해 적절한 로더로 처리
-            translated_data[key] = registry.process_item(
-                input_path, key, value, context
-            )
+            translated_value = registry.process_item(input_path, key, value, context)
+            translated_data[key] = translated_value
+
         except RuntimeError as e:
             # API 할당량 초과나 심각한 LLM 오류 발생 시
             logger.error(f"LLM API 오류로 번역이 중단되었습니다: {e}")
-
-            # 중간 결과 저장
-            try:
-                logger.info(
-                    f"오류 발생 시점까지의 번역 결과를 {output_path}에 저장합니다."
-                )
-                with open(output_path, "w", encoding="utf-8") as f:
-                    json.dump(translated_data, f, ensure_ascii=False, indent=4)
-            except Exception as save_error:
-                logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
-
-            # 번역 중단 전에 사전도 저장
-            try:
-                dict_output_path = f"{os.path.splitext(output_path)[0]}_dictionary.json"
-                logger.info(f"번역 사전을 {dict_output_path}에 저장합니다.")
-                with open(dict_output_path, "w", encoding="utf-8") as f:
-                    json.dump(translation_dictionary, f, ensure_ascii=False, indent=4)
-            except Exception as dict_save_error:
-                logger.error(f"사전 저장 중 오류 발생: {dict_save_error}")
-
-            # 오류 전파
             raise
         except Exception as e:
             logger.error(f"항목 '{key}' 번역 중 오류 발생: {e}")
@@ -600,4 +546,5 @@ def translate_json_file(
         except Exception as backup_save_error:
             logger.error(f"백업 저장 중 오류 발생: {backup_save_error}")
 
-    return translation_dictionary
+    # 최종 번역 사전 반환
+    return context.get_dictionary()

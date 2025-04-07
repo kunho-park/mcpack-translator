@@ -58,6 +58,7 @@ class PatchouliBooksLoader(BaseLoader):
                                 "text": page[k],
                                 "custom_dictionary_dict": custom_dictionary_dict,
                                 "llm": llm,
+                                "context": context,
                             }
                         )
                         page[k] = state["restored_text"]

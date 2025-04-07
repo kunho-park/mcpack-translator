@@ -49,7 +49,9 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
             return value
 
-        def translate_value(value, translation_graph, custom_dictionary_dict, llm):
+        def translate_value(
+            value, translation_graph, custom_dictionary_dict, llm, context
+        ):
             """
             값을 재귀적으로 번역하는 함수입니다.
             문자열, 리스트, 딕셔너리를 처리합니다.
@@ -62,18 +64,27 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                         "text": value,
                         "custom_dictionary_dict": custom_dictionary_dict,
                         "llm": llm,
+                        "context": context,
                     }
                 )
                 return state["restored_text"]
             elif isinstance(value, list):
                 if sum(not isinstance(item, str) for item in value) == 0:
                     return translate_value(
-                        "\n".join(value), translation_graph, custom_dictionary_dict, llm
+                        "\n".join(value),
+                        translation_graph,
+                        custom_dictionary_dict,
+                        llm,
+                        context,
                     ).split("\n")
                 else:
                     return [
                         translate_value(
-                            item, translation_graph, custom_dictionary_dict, llm
+                            item,
+                            translation_graph,
+                            custom_dictionary_dict,
+                            llm,
+                            context,
                         )
                         for item in value
                     ]
@@ -85,6 +96,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             translation_graph,
                             custom_dictionary_dict,
                             llm,
+                            context,
                         )
                 return value
             else:
@@ -99,6 +111,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             translation_graph,
                             custom_dictionary_dict,
                             llm,
+                            context,
                         )
         return value
 
@@ -151,6 +164,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
                 "text": value_dict["text"],
                 "custom_dictionary_dict": custom_dictionary_dict,
                 "llm": llm,
+                "context": context,
             }
         )
         value_dict["text"] = state["restored_text"]

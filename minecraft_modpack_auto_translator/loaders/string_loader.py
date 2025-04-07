@@ -28,7 +28,6 @@ class StringLoader(BaseLoader):
         문자열을 번역합니다.
         """
         translation_graph = context.translation_graph
-        custom_dictionary_dict = context.custom_dictionary_dict
         llm = context.llm
 
         if not translation_graph:
@@ -39,11 +38,13 @@ class StringLoader(BaseLoader):
             # 개행 문자 처리
             processed_value = value.replace("\\n", "\n")
 
+            # 컨텍스트 객체를 상태에 전달
             state = translation_graph.invoke(
                 {
                     "text": processed_value,
-                    "custom_dictionary_dict": custom_dictionary_dict,
+                    "custom_dictionary_dict": context.custom_dictionary_dict,
                     "llm": llm,
+                    "context": context,
                 }
             )
 
