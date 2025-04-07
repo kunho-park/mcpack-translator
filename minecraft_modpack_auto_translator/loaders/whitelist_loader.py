@@ -24,9 +24,12 @@ class WhiteListLoader(BaseLoader):
         맞는 형식인지 확인합니다.
         """
         for path, whitelist_key in self.whitelist:
-            if path in input_path and key == whitelist_key:
-                return False
-        return True
+            if path in input_path:
+                if whitelist_key == key:
+                    return False
+                else:
+                    return True
+        return False
 
     def process(
         self, input_path: str, key: str, value: Any, context: TranslationContext
