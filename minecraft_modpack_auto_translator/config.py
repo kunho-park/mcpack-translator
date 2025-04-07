@@ -20,7 +20,7 @@ C_PLACEHOLDER_PATTERN = r"%(?:[sd]|1\$s)"
 ITEM_PLACEHOLDER_PATTERN = r"\$\([^)]*\)"
 JSON_PLACEHOLDER_PATTERN = r"\{(?:[^{}]|(?R))*\}"
 HTML_TAG_PATTERN = r"<[^>]*>"
-MINECRAFT_ITEM_CODE_PATTERN = r"[a-z_0-9]+:[0-9a-z_./]+"
+MINECRAFT_ITEM_CODE_PATTERN = r"[a-z_0-9]+[:.][0-9a-z_.\/]+"
 
 ADDED_DICTIONARY_ENTRIES = []
 
