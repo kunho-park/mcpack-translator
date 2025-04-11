@@ -1,9 +1,10 @@
+import asyncio
 import copy
 import json
 import logging
 import re
 import traceback
-from typing import List
+from typing import Any, Dict, List
 
 import regex
 from dotenv import load_dotenv
@@ -14,7 +15,6 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 from rank_bm25 import BM25Okapi
-from tqdm import tqdm
 
 from .config import (
     C_PLACEHOLDER_PATTERN,
@@ -125,7 +125,7 @@ def restore_special_formats(text, placeholder_map):
 
 
 # 텍스트 분석 및 특수 형식 추출
-def analyze_text(state):
+async def analyze_text(state):
     text = state["text"]
     replaced_text, placeholder_map = extract_special_formats(text)
 
@@ -144,7 +144,7 @@ def analyze_text(state):
 
 
 # RAG에서 번역 정보 검색
-def retrieve_translations(state):
+async def retrieve_translations(state):
     context = state["context"]
     context.initialize_dictionaries()
     translation_dictionary = context.translation_dictionary
@@ -212,7 +212,7 @@ def retrieve_translations(state):
     return {**state, "dictionary": dictionary}
 
 
-def translate_text(state):
+async def translate_text(state):
     text_to_translate = state["replaced_text"]
     text_replaced_with_korean_dictionary = state["replaced_text"]
     llm: BaseChatModel = state["llm"]
@@ -322,7 +322,8 @@ def translate_text(state):
             chain = prompt_template | llm | custom_parser | parser
 
             try:
-                result: TranslationResponse = chain.invoke(
+                # LLM 호출은 잠재적으로 오래 걸릴 수 있는 작업이므로 비동기로 처리
+                result: TranslationResponse = await chain.ainvoke(
                     {
                         "text": text_to_translate,
                         "dictionary": dictionary_text,
@@ -433,7 +434,7 @@ def translate_text(state):
 
 
 # 특수 형식 복원
-def restore_formats(state):
+async def restore_formats(state):
     restored_text = restore_special_formats(
         state["translated_text"],
         state["placeholder_map"],
@@ -460,7 +461,7 @@ def create_translation_graph():
     # 워크플로우 그래프 정의
     workflow = StateGraph(TranslationState)
 
-    # 노드 추가
+    # 노드 추가 (비동기 함수로 변환됨)
     workflow.add_node("analyze", analyze_text)
     workflow.add_node("retrieve", retrieve_translations)
     workflow.add_node("translate", translate_text)
@@ -479,12 +480,39 @@ def create_translation_graph():
     return graph
 
 
-def translate_json_file(
-    input_path,
-    output_path,
-    custom_dictionary_dict={},
+async def translate_item(
+    input_path: str,
+    key: str,
+    value: Any,
+    context: TranslationContext,
+    progress_callback=None,
+) -> Any:
+    """한 항목을 비동기적으로 번역합니다."""
+    try:
+        translated_value = await registry.aprocess_item(input_path, key, value, context)
+        if progress_callback:
+            await progress_callback()
+        return key, translated_value
+    except RuntimeError as e:
+        # API 할당량 초과나 심각한 LLM 오류 발생 시
+        logger.error(f"LLM API 오류로 번역이 중단되었습니다: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"항목 '{key}' 번역 중 오류 발생: {e}")
+        logger.debug(traceback.format_exc())
+        # 일반 오류는 원본 값 반환
+        return key, value
+
+
+async def translate_json_file(
+    input_path: str,
+    output_path: str,
+    custom_dictionary_dict: Dict = {},
     llm=None,
+    max_workers: int = 5,
+    progress_callback=None,
 ):
+    """JSON 파일을 비동기적으로 번역합니다."""
     # 입력 JSON 파일 로드
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -495,7 +523,7 @@ def translate_json_file(
     # 번역 결과를 저장할 복사본 생성
     translated_data = copy.deepcopy(data)
 
-    # 진행 상황 표시를 위한 tqdm 설정
+    # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
 
     # 컨텍스트 생성
@@ -506,29 +534,51 @@ def translate_json_file(
         registry=registry,
     )
 
-    idx = 0
-    for key, value in tqdm(list(data.items()), desc="번역 진행률"):
-        try:
-            translated_value = registry.process_item(input_path, key, value, context)
-            translated_data[key] = translated_value
+    # 작업 큐 생성
+    queue = asyncio.Queue()
 
-        except RuntimeError as e:
-            # API 할당량 초과나 심각한 LLM 오류 발생 시
-            logger.error(f"LLM API 오류로 번역이 중단되었습니다: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"항목 '{key}' 번역 중 오류 발생: {e}")
-            logger.debug(traceback.format_exc())
-            # 일반 오류는 계속 진행
+    # 큐에 작업 추가
+    for key, value in data.items():
+        await queue.put((key, value))
 
-        idx += 1
-        if idx % 100 == 0:
-            # 주기적으로 중간 결과 저장
+    # Worker 함수 정의
+    async def worker(worker_id: int):
+        while not queue.empty():
             try:
-                with open(output_path, "w", encoding="utf-8") as f:
-                    json.dump(translated_data, f, ensure_ascii=False, indent=4)
-            except Exception as save_error:
-                logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
+                key, value = await queue.get()
+                key, translated_value = await translate_item(
+                    input_path, key, value, context, progress_callback
+                )
+                translated_data[key] = translated_value
+                queue.task_done()
+
+                # 주기적으로 중간 결과 저장 (100개 항목마다)
+                if queue.qsize() % 100 == 0:
+                    try:
+                        with open(output_path, "w", encoding="utf-8") as f:
+                            json.dump(translated_data, f, ensure_ascii=False, indent=4)
+                    except Exception as save_error:
+                        logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
+
+            except Exception as e:
+                logger.error(f"Worker {worker_id} 오류: {e}")
+                queue.task_done()
+
+    # Worker 시작
+    workers = []
+    for i in range(max_workers):
+        task = asyncio.create_task(worker(i))
+        workers.append(task)
+
+    # 모든 작업이 완료될 때까지 대기
+    await queue.join()
+
+    # Worker 태스크 취소
+    for task in workers:
+        task.cancel()
+
+    # 완료된 태스크 처리
+    await asyncio.gather(*workers, return_exceptions=True)
 
     # 번역된 데이터 저장
     try:

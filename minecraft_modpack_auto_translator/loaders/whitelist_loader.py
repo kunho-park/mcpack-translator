@@ -47,3 +47,12 @@ class WhiteListLoader(BaseLoader):
         현재는 그대로 반환합니다.
         """
         return value
+
+    async def aprocess(
+        self, input_path: str, key: str, value: Any, context: TranslationContext
+    ) -> Any:
+        """
+        딕셔너리 값을 비동기적으로 처리합니다.
+        현재는 그대로 반환합니다.
+        """
+        return value

@@ -28,7 +28,7 @@
 
 #### 설치 절차
 
-1. [mcpack-translator-win.zip](https://github.com/kunho-park/mcpack-translator/releases/download/setup/mcpack-translator-win.zip) 파일을 다운로드합니다.
+1. [mcpack-translator-win.zip](https://github.com/kunho-park/mcpack-translator/releases/download/setup/mcpack-translator-win-1.0.1.zip) 파일을 다운로드합니다.
 2. 압축을 풀고 `update.bat` 파일을 실행하여 최신 버전으로 업데이트합니다.
 3. `run.bat` 파일을 실행하여 프로그램을 시작합니다.
    (이후 실행 시에는 업데이트가 필요 없다면 `run.bat`만 실행하면 됩니다.)

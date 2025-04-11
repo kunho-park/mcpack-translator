@@ -114,6 +114,88 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             context,
                         )
         return value
+        
+    async def aprocess(
+        self, input_path: str, key: str, value: Any, context: TranslationContext
+    ) -> Any:
+        """
+        딕셔너리 값을 비동기적으로 처리합니다.
+        """
+        translation_graph = context.translation_graph
+        custom_dictionary_dict = context.custom_dictionary_dict
+        llm = context.llm
+
+        if not translation_graph:
+            self.logger.error("번역 그래프가 제공되지 않았습니다.")
+            return value
+
+        async def translate_value_async(
+            value, translation_graph, custom_dictionary_dict, llm, context
+        ):
+            """
+            값을 재귀적으로 비동기 번역하는 함수입니다.
+            문자열, 리스트, 딕셔너리를 처리합니다.
+            """
+            if isinstance(value, str):
+                if value == "":
+                    return value
+                state = await translation_graph.ainvoke(
+                    {
+                        "text": value,
+                        "custom_dictionary_dict": custom_dictionary_dict,
+                        "llm": llm,
+                        "context": context,
+                    }
+                )
+                return state["restored_text"]
+            elif isinstance(value, list):
+                if sum(not isinstance(item, str) for item in value) == 0:
+                    translated = await translate_value_async(
+                        "\n".join(value),
+                        translation_graph,
+                        custom_dictionary_dict,
+                        llm,
+                        context,
+                    )
+                    return translated.split("\n")
+                else:
+                    results = []
+                    for item in value:
+                        translated_item = await translate_value_async(
+                            item,
+                            translation_graph,
+                            custom_dictionary_dict,
+                            llm,
+                            context,
+                        )
+                        results.append(translated_item)
+                    return results
+            elif isinstance(value, dict):
+                for k in value.keys():
+                    if k in self.json_key_white_list:
+                        value[k] = await translate_value_async(
+                            value[k],
+                            translation_graph,
+                            custom_dictionary_dict,
+                            llm,
+                            context,
+                        )
+                return value
+            else:
+                return value
+
+        for quest in value:
+            if isinstance(quest, dict):
+                for k in quest.keys():
+                    if k in self.json_key_white_list:
+                        quest[k] = await translate_value_async(
+                            quest[k],
+                            translation_graph,
+                            custom_dictionary_dict,
+                            llm,
+                            context,
+                        )
+        return value
 
 
 class FTBQuestsChapterTitleLoader(BaseLoader):
@@ -160,6 +242,33 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
 
         value_dict = json.loads(value)
         state = translation_graph.invoke(
+            {
+                "text": value_dict["text"],
+                "custom_dictionary_dict": custom_dictionary_dict,
+                "llm": llm,
+                "context": context,
+            }
+        )
+        value_dict["text"] = state["restored_text"]
+
+        return json.dumps(value_dict, ensure_ascii=False)
+        
+    async def aprocess(
+        self, input_path: str, key: str, value: Any, context: TranslationContext
+    ) -> Any:
+        """
+        딕셔너리 값을 비동기적으로 처리합니다.
+        """
+        translation_graph = context.translation_graph
+        custom_dictionary_dict = context.custom_dictionary_dict
+        llm = context.llm
+
+        if not translation_graph:
+            self.logger.error("번역 그래프가 제공되지 않았습니다.")
+            return value
+
+        value_dict = json.loads(value)
+        state = await translation_graph.ainvoke(
             {
                 "text": value_dict["text"],
                 "custom_dictionary_dict": custom_dictionary_dict,

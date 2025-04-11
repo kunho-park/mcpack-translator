@@ -61,3 +61,43 @@ class ListLoader(BaseLoader):
         except Exception as e:
             self.logger.error(f"리스트 번역 중 오류 발생: {e}")
             return value
+
+    async def aprocess(
+        self, input_path: str, key: str, value: Any, context: TranslationContext
+    ) -> Any:
+        """
+        리스트 내 각 문자열 항목을 비동기적으로 번역합니다.
+        """
+        translation_graph = context.translation_graph
+        llm = context.llm
+
+        if not translation_graph:
+            self.logger.error("번역 그래프가 제공되지 않았습니다.")
+            return value
+
+        try:
+            translated_list: List[str] = []
+
+            for item in value:
+                if not isinstance(item, str) or item.strip() == "":
+                    translated_list.append(item if isinstance(item, str) else "")
+                    continue
+
+                # 문자열 항목에 대한 번역 수행
+                processed_item = item.replace("\\n", "\n")
+
+                state = await translation_graph.ainvoke(
+                    {
+                        "text": processed_item,
+                        "custom_dictionary_dict": context.custom_dictionary_dict,
+                        "llm": llm,
+                        "context": context,
+                    }
+                )
+
+                translated_list.append(state["restored_text"])
+
+            return translated_list
+        except Exception as e:
+            self.logger.error(f"리스트 비동기 번역 중 오류 발생: {e}")
+            return value
