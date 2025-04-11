@@ -7,6 +7,7 @@ import shutil
 import traceback
 import uuid
 import zipfile
+from glob import escape as glob_escape
 from glob import glob
 
 import streamlit as st
@@ -304,26 +305,34 @@ def normalize_glob_path(path):
     # 경로 구분자 통일 (백슬래시 -> 슬래시)
     normalized_path = path.replace("\\", "/")
 
-    # 대괄호 등 glob의 특수 문자가 있는 경로 처리
-    # glob 경로를 디렉토리와 패턴 부분으로 분리
-    if "**" in normalized_path:
-        path_parts = normalized_path.split("/**", 1)
-        dir_part = path_parts[0]
-        pattern_part = "/**" + (path_parts[1] if len(path_parts) > 1 else "")
-    else:
-        last_slash = normalized_path.rfind("/")
-        if last_slash != -1:
-            dir_part = normalized_path[:last_slash]
-            pattern_part = normalized_path[last_slash:]
+    # 와일드카드 있는지 확인
+    has_wildcard = "*" in normalized_path or "?" in normalized_path
+
+    if has_wildcard:
+        # 경로와 패턴 부분 분리
+        if "**" in normalized_path:
+            # 재귀적 패턴 처리
+            path_parts = normalized_path.split("/**", 1)
+            base_dir = path_parts[0]
+            pattern = "/**" + (path_parts[1] if len(path_parts) > 1 else "")
+            # base_dir 부분만 이스케이프
+            return glob_escape(base_dir) + pattern
         else:
-            dir_part = "."
-            pattern_part = "/" + normalized_path
+            # 일반 와일드카드 패턴
+            last_wildcard_idx = max(
+                normalized_path.rfind("*"), normalized_path.rfind("?")
+            )
+            if last_wildcard_idx != -1:
+                last_dir_sep = normalized_path.rfind("/", 0, last_wildcard_idx)
+                if last_dir_sep != -1:
+                    # 경로의 디렉토리 부분만 이스케이프
+                    return (
+                        glob_escape(normalized_path[:last_dir_sep])
+                        + normalized_path[last_dir_sep:]
+                    )
 
-    # 디렉토리 부분에 특수 문자가 포함된 경우 실제 존재하는지 확인
-    if os.path.exists(dir_part):
-        return dir_part + pattern_part
-
-    return normalized_path
+    # 와일드카드가 없으면 전체 경로 이스케이프
+    return glob_escape(normalized_path)
 
 
 def process_modpack_directory(
