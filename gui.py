@@ -295,6 +295,37 @@ def build_dictionary_from_jar(
     )
 
 
+# 경로 특수 문자 처리 및 정규화
+def normalize_glob_path(path):
+    """
+    glob 패턴에서 사용할 경로를 정규화합니다.
+    경로 구분자를 통일하고 특수 문자가 있는 부분을 처리합니다.
+    """
+    # 경로 구분자 통일 (백슬래시 -> 슬래시)
+    normalized_path = path.replace("\\", "/")
+
+    # 대괄호 등 glob의 특수 문자가 있는 경로 처리
+    # glob 경로를 디렉토리와 패턴 부분으로 분리
+    if "**" in normalized_path:
+        path_parts = normalized_path.split("/**", 1)
+        dir_part = path_parts[0]
+        pattern_part = "/**" + (path_parts[1] if len(path_parts) > 1 else "")
+    else:
+        last_slash = normalized_path.rfind("/")
+        if last_slash != -1:
+            dir_part = normalized_path[:last_slash]
+            pattern_part = normalized_path[last_slash:]
+        else:
+            dir_part = "."
+            pattern_part = "/" + normalized_path
+
+    # 디렉토리 부분에 특수 문자가 포함된 경우 실제 존재하는지 확인
+    if os.path.exists(dir_part):
+        return dir_part + pattern_part
+
+    return normalized_path
+
+
 def process_modpack_directory(
     modpack_path, translate_config=True, translate_kubejs=True, translate_mods=True
 ):
@@ -306,7 +337,10 @@ def process_modpack_directory(
 
     # config 폴더 내 파일 검색 (선택한 경우)
     if translate_config:
-        config_files = glob(os.path.join(modpack_path, "config/**/*.*"), recursive=True)
+        config_glob_path = normalize_glob_path(
+            os.path.join(modpack_path, "config/**/*.*")
+        )
+        config_files = glob(config_glob_path, recursive=True)
         for f in config_files:
             f = f.replace("\\", "/")
             file_ext = os.path.splitext(f)[1]
@@ -319,7 +353,10 @@ def process_modpack_directory(
 
     # kubejs 폴더 내 파일 검색 (선택한 경우)
     if translate_kubejs:
-        kubejs_files = glob(os.path.join(modpack_path, "kubejs/**/*.*"), recursive=True)
+        kubejs_glob_path = normalize_glob_path(
+            os.path.join(modpack_path, "kubejs/**/*.*")
+        )
+        kubejs_files = glob(kubejs_glob_path, recursive=True)
         for f in kubejs_files:
             f = f.replace("\\", "/")
             file_ext = os.path.splitext(f)[1]
@@ -333,7 +370,8 @@ def process_modpack_directory(
     # mods 폴더 내 jar 파일 검색 (선택한 경우)
     mods_jar_files = []
     if translate_mods:
-        mods_jar_files = glob(os.path.join(modpack_path, "mods/*.jar"))
+        mods_glob_path = normalize_glob_path(os.path.join(modpack_path, "mods/*.jar"))
+        mods_jar_files = glob(mods_glob_path)
 
         extract_dir = os.path.join(modpack_path, "extracted")
         os.makedirs(extract_dir, exist_ok=True)
@@ -1332,7 +1370,8 @@ def main():
                         continue
 
                     output_dir = os.path.join(output_path, category, "output", "**")
-                    if len(glob(output_dir, recursive=True)) > 1:
+                    output_glob_path = normalize_glob_path(output_dir)
+                    if len(glob(output_glob_path, recursive=True)) > 1:
                         # 리소스팩 생성
                         resourcepack_zip = create_resourcepack(
                             output_path,

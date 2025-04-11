@@ -17,6 +17,37 @@ logging.basicConfig(
 logger = logging.getLogger("resource_pack_creator")
 
 
+# 경로 특수 문자 처리 및 정규화
+def normalize_glob_path(path):
+    """
+    glob 패턴에서 사용할 경로를 정규화합니다.
+    경로 구분자를 통일하고 특수 문자가 있는 부분을 처리합니다.
+    """
+    # 경로 구분자 통일 (백슬래시 -> 슬래시)
+    normalized_path = path.replace("\\", "/")
+
+    # 대괄호 등 glob의 특수 문자가 있는 경로 처리
+    # glob 경로를 디렉토리와 패턴 부분으로 분리
+    if "**" in normalized_path:
+        path_parts = normalized_path.split("/**", 1)
+        dir_part = path_parts[0]
+        pattern_part = "/**" + (path_parts[1] if len(path_parts) > 1 else "")
+    else:
+        last_slash = normalized_path.rfind("/")
+        if last_slash != -1:
+            dir_part = normalized_path[:last_slash]
+            pattern_part = normalized_path[last_slash:]
+        else:
+            dir_part = "."
+            pattern_part = "/" + normalized_path
+
+    # 디렉토리 부분에 특수 문자가 포함된 경우 실제 존재하는지 확인
+    if os.path.exists(dir_part):
+        return dir_part + pattern_part
+
+    return normalized_path
+
+
 def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation"):
     """
     번역된 내용으로 마인크래프트 리소스팩을 생성합니다.
@@ -63,12 +94,16 @@ def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation")
             logger.warning(f"폴더 또는 파일이 존재하지 않습니다: {folder}")
             continue
         if "mods/" in folder:
-            for path in glob(os.path.join(folder, "extracted", "*"), recursive=True):
+            extracted_glob_path = normalize_glob_path(
+                os.path.join(folder, "extracted", "*")
+            )
+            for path in glob(extracted_glob_path, recursive=True):
                 # 모드 추출 파일을 리소스팩 디렉토리로 복사
                 # 대상 디렉토리가 이미 존재하는 경우 오류가 발생할 수 있으므로
                 # 파일별로 복사 진행
                 # glob을 사용하여 모든 파일 찾기
-                for src_file in glob(os.path.join(path, "**", "*"), recursive=True):
+                path_glob = normalize_glob_path(os.path.join(path, "**", "*"))
+                for src_file in glob(path_glob, recursive=True):
                     if os.path.isfile(src_file):
                         # 원본 경로에서 상대 경로 추출
                         rel_path = os.path.relpath(src_file, path)
@@ -80,7 +115,8 @@ def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation")
                         # 파일 복사
                         shutil.copy2(src_file, dst_file)
         elif "kubejs" in folder or "config" in folder:
-            for path in glob(os.path.join(folder, "**", "*.*"), recursive=True):
+            folder_glob_path = normalize_glob_path(os.path.join(folder, "**", "*.*"))
+            for path in glob(folder_glob_path, recursive=True):
                 normalized_path = path.replace("\\", "/")
                 normalized_folder = folder.replace("\\", "/")
                 relative_path = "/".join(
