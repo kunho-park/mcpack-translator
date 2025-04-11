@@ -969,7 +969,7 @@ def main():
                     processed_items=None,
                 ):
                     if file_path:
-                        worker_statuses[worker_id]["file"] = os.path.basename(file_path)
+                        worker_statuses[worker_id]["file"] = file_path
 
                     if progress is not None:
                         worker_statuses[worker_id]["progress"] = progress
