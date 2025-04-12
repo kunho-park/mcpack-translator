@@ -1463,7 +1463,7 @@ def main():
 
                 # 결과 표시
                 st.success(
-                    f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일이 번역되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
+                    f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일은 건너뛰고 번역 되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
                 )
 
                 # 오류 발생 파일 표시
