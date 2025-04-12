@@ -56,7 +56,7 @@ def get_translator(
             model=model_name,
             openai_api_key=api_key,
             openai_api_base=api_base,
-            temperature=temperature, 
+            temperature=temperature,
             rate_limiter=rate_limiter,
         )
     elif provider == "ollama":

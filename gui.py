@@ -624,7 +624,7 @@ def main():
         "Temperature",
         min_value=0.0,
         max_value=1.0,
-        value=0.1,
+        value=0.0,
         step=0.05,
         help="값이 낮을수록 더 창의성이 낮은 응답이, 높을수록 더 창의성이 높은 응답이 생성됩니다.",
     )
@@ -1192,7 +1192,7 @@ def main():
 
                         # 번역 실행
                         try:
-                            result_dictionary = await minecraft_modpack_auto_translator.translate_json_file(
+                            await minecraft_modpack_auto_translator.translate_json_file(
                                 input_path=input_file,
                                 output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
                                 custom_dictionary_dict=translation_dictionary,
