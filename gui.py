@@ -752,6 +752,14 @@ def main():
                 log_container = st.expander("번역 로그", expanded=True)
                 logs = []  # 로그 메시지를 저장할 리스트
 
+                # 사전 공유를 위한 락
+                dictionary_lock = asyncio.Lock()
+                # 공유 사전 저장 경로
+                shared_dict_path = os.path.join(
+                    output_path, "total_dictionary", "shared_dictionary.json"
+                )
+                os.makedirs(os.path.dirname(shared_dict_path), exist_ok=True)
+
                 # 로그 출력 함수
                 def add_log(message, level="info"):
                     logs.append(
@@ -1163,7 +1171,22 @@ def main():
 
                             # 번역 실행
                             try:
-                                translation_dictionary = await minecraft_modpack_auto_translator.translate_json_file(
+                                # 공유 사전 불러오기
+                                async with dictionary_lock:
+                                    if os.path.exists(shared_dict_path):
+                                        try:
+                                            with open(
+                                                shared_dict_path, "r", encoding="utf-8"
+                                            ) as f:
+                                                shared_dictionary = json.load(f)
+                                                # 공유 사전으로 업데이트
+                                                translation_dictionary.update(
+                                                    shared_dictionary
+                                                )
+                                        except Exception as e:
+                                            logger.warning(f"공유 사전 로드 실패: {e}")
+
+                                result_dictionary = await minecraft_modpack_auto_translator.translate_json_file(
                                     input_path=input_file,
                                     output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
                                     custom_dictionary_dict=translation_dictionary,
@@ -1178,6 +1201,20 @@ def main():
                                     max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
                                     progress_callback=progress_callback,
                                 )
+
+                                # 공유 사전 업데이트
+                                async with dictionary_lock:
+                                    translation_dictionary.update(result_dictionary)
+                                    # 공유 사전 저장
+                                    with open(
+                                        shared_dict_path, "w", encoding="utf-8"
+                                    ) as f:
+                                        json.dump(
+                                            translation_dictionary,
+                                            f,
+                                            ensure_ascii=False,
+                                            indent=4,
+                                        )
 
                                 # 모든 항목 처리 완료
                                 processed_items = total_items
@@ -1210,26 +1247,6 @@ def main():
                                             output_file, "w", encoding="utf-8"
                                         ) as f:
                                             f.write(content)
-
-                                        # 번역 과정에서 업데이트된 사전 중간 저장
-                                        dict_temp_path = os.path.join(
-                                            output_path,
-                                            "total_dictionary",
-                                            f"temp_dict_{uuid.uuid4().hex[:8]}.json",
-                                        )
-                                        os.makedirs(
-                                            os.path.dirname(dict_temp_path),
-                                            exist_ok=True,
-                                        )
-                                        with open(
-                                            dict_temp_path, "w", encoding="utf-8"
-                                        ) as f:
-                                            json.dump(
-                                                translation_dictionary,
-                                                f,
-                                                ensure_ascii=False,
-                                                indent=4,
-                                            )
 
                                         # 임시 파일 삭제
                                         try:
