@@ -362,7 +362,7 @@ async def translate_text(state):
                                         break
 
                         if adding:
-                            context.add_to_dictionary(
+                            await context.async_add_to_dictionary(
                                 entry.en.lower(), entry.ko.lower()
                             )
                             logger.info(
@@ -526,13 +526,17 @@ async def translate_json_file(
     # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
 
-    # 컨텍스트 생성
+    # 공유 컨텍스트 생성 (모든 워커가 이 컨텍스트를 공유함)
     context = TranslationContext(
         translation_graph=translation_graph,
         custom_dictionary_dict=custom_dictionary_dict,
         llm=llm,
         registry=registry,
     )
+
+    # 공유 사전 초기화
+    context.initialize_dictionaries()
+    logger.info(f"초기 사전 크기: {len(context.get_dictionary())}개 항목")
 
     # 작업 큐 생성
     queue = asyncio.Queue()
@@ -541,8 +545,14 @@ async def translate_json_file(
     for key, value in data.items():
         await queue.put((key, value))
 
+    # 공유 사전 상태 저장용 락
+    dict_save_lock = asyncio.Lock()
+    last_save_size = len(context.get_dictionary())
+
     # Worker 함수 정의
     async def worker(worker_id: int):
+        nonlocal last_save_size
+
         while not queue.empty():
             try:
                 key, value = await queue.get()
@@ -552,13 +562,37 @@ async def translate_json_file(
                 translated_data[key] = translated_value
                 queue.task_done()
 
-                # 주기적으로 중간 결과 저장 (100개 항목마다)
-                if queue.qsize() % 100 == 0:
-                    try:
-                        with open(output_path, "w", encoding="utf-8") as f:
-                            json.dump(translated_data, f, ensure_ascii=False, indent=4)
-                    except Exception as save_error:
-                        logger.error(f"중간 결과 저장 중 오류 발생: {save_error}")
+                # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
+                current_dict_size = len(context.get_dictionary())
+                if current_dict_size - last_save_size >= 10:
+                    async with dict_save_lock:
+                        # 다른 워커가 이미 저장했는지 다시 확인
+                        if current_dict_size - last_save_size >= 10:
+                            try:
+                                # 중간 결과 파일 저장
+                                with open(output_path, "w", encoding="utf-8") as f:
+                                    json.dump(
+                                        translated_data, f, ensure_ascii=False, indent=4
+                                    )
+
+                                # 사전 저장 (임시 파일에)
+                                dict_temp_path = f"{output_path}.dict.json"
+                                with open(dict_temp_path, "w", encoding="utf-8") as f:
+                                    json.dump(
+                                        context.get_dictionary(),
+                                        f,
+                                        ensure_ascii=False,
+                                        indent=4,
+                                    )
+
+                                last_save_size = current_dict_size
+                                logger.info(
+                                    f"중간 사전 저장 완료: {current_dict_size}개 항목"
+                                )
+                            except Exception as save_error:
+                                logger.error(
+                                    f"중간 결과 저장 중 오류 발생: {save_error}"
+                                )
 
             except Exception as e:
                 logger.error(f"Worker {worker_id} 오류: {e}")

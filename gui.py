@@ -752,14 +752,6 @@ def main():
                 log_container = st.expander("번역 로그", expanded=True)
                 logs = []  # 로그 메시지를 저장할 리스트
 
-                # 사전 공유를 위한 락
-                dictionary_lock = asyncio.Lock()
-                # 공유 사전 저장 경로
-                shared_dict_path = os.path.join(
-                    output_path, "total_dictionary", "shared_dictionary.json"
-                )
-                os.makedirs(os.path.dirname(shared_dict_path), exist_ok=True)
-
                 # 로그 출력 함수
                 def add_log(message, level="info"):
                     logs.append(
@@ -781,517 +773,464 @@ def main():
                             elif log["level"] == "success":
                                 st.success(f"[{log['time']}] {log['message']}")
 
-                # 작업자별 진행 상황 컨테이너
-                worker_progress_bars = {}
-                worker_progress_texts = {}
-                worker_status_texts = {}
+            # 작업자별 진행 상황 컨테이너
+            worker_progress_bars = {}
+            worker_progress_texts = {}
+            worker_status_texts = {}
 
-                # 작업자별 진행 상황 초기화
-                for i in range(max_workers):
-                    st.markdown(f"### Worker {i + 1}")
-                    worker_cols = st.columns([3, 1])
+            # 작업자별 진행 상황 초기화
+            for i in range(max_workers):
+                st.markdown(f"### Worker {i + 1}")
+                worker_cols = st.columns([3, 1])
 
-                    with worker_cols[0]:
-                        worker_progress_bars[i] = st.progress(0)
-                    with worker_cols[1]:
-                        worker_progress_texts[i] = st.empty()
+                with worker_cols[0]:
+                    worker_progress_bars[i] = st.progress(0)
+                with worker_cols[1]:
+                    worker_progress_texts[i] = st.empty()
 
-                    worker_status_texts[i] = st.empty()
-                    st.markdown("---")
+                worker_status_texts[i] = st.empty()
+                st.markdown("---")
 
-                # LLM 인스턴스 생성
-                status_text.text("모델 초기화 중...")
-                add_log("모델 초기화 중...")
+            # LLM 인스턴스 생성
+            status_text.text("모델 초기화 중...")
+            add_log("모델 초기화 중...")
 
-                # 글로벌 API 키 인덱스 초기화
-                st.session_state.api_key_index = 0
-                total_api_keys = len(api_keys)
+            # 글로벌 API 키 인덱스 초기화
+            st.session_state.api_key_index = 0
+            total_api_keys = len(api_keys)
 
-                add_log(f"총 {total_api_keys}개의 API 키를 순차적으로 사용합니다.")
+            add_log(f"총 {total_api_keys}개의 API 키를 순차적으로 사용합니다.")
 
-                try:
-                    # Rate Limiter 설정
-                    rate_limiter = None
-                    if use_rate_limiter:
-                        # RPM을 RPS(초당 요청 수)로 변환
-                        rps = rpm / 60.0
-                        rate_limiter = InMemoryRateLimiter(
-                            requests_per_second=rps,
-                            check_every_n_seconds=0.1,
-                            max_bucket_size=10,
+            try:
+                # Rate Limiter 설정
+                rate_limiter = None
+                if use_rate_limiter:
+                    # RPM을 RPS(초당 요청 수)로 변환
+                    rps = rpm / 60.0
+                    rate_limiter = InMemoryRateLimiter(
+                        requests_per_second=rps,
+                        check_every_n_seconds=0.1,
+                        max_bucket_size=10,
+                    )
+                    status_text.text(f"속도 제한: {rpm} RPM ({rps:.2f} RPS)")
+                    add_log(f"속도 제한 설정: {rpm} RPM ({rps:.2f} RPS)")
+
+                # 현재 API 키 가져오기
+                st.session_state.api_key_index = (
+                    st.session_state.api_key_index + 1
+                ) % total_api_keys
+
+                add_log(
+                    f"API 키 사용 중: {st.session_state.api_key_index}/{total_api_keys}"
+                )
+
+            except RuntimeError as e:
+                add_log(f"모델 초기화 중 오류 발생: {e}", "error")
+                st.error(
+                    f"모델 초기화 사용 중 오류가 발생했습니다.\n\n오류 메시지: {e}"
+                )
+                return
+
+            # 출력 디렉토리 생성
+            os.makedirs(output_path, exist_ok=True)
+            dictionary_path = os.path.join(output_path, "dictionary")
+            os.makedirs(dictionary_path, exist_ok=True)
+            add_log(f"출력 디렉토리 생성 완료: {output_path}")
+
+            # UUID 생성 (리소스팩 식별자로 사용)
+            uuid_str = str(uuid.uuid4())
+
+            # 모드팩 디렉토리에서 번역할 파일 찾기
+            status_text.text("번역 대상 파일 검색 중...")
+            add_log("번역 대상 파일 검색 중...")
+            en_us_files, mods_jar_files = process_modpack_directory(
+                modpack_path, translate_config, translate_kubejs, translate_mods
+            )
+
+            if len(en_us_files) == 0:
+                add_log("번역할 파일을 찾을 수 없습니다.", "warning")
+                st.warning("번역할 파일을 찾을 수 없습니다.")
+                return
+
+            status_text.text(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
+            add_log(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
+
+            # 기존 번역에서 사전 구축
+            if build_dict_from_existing:
+                status_text.text("기존 번역에서 사전 구축 중...")
+                add_log("기존 번역에서 사전 구축 중...")
+
+                # JAR 파일에서 사전 구축
+                (
+                    translation_dictionary,
+                    translation_dictionary_lowercase,
+                    jar_files_count,
+                    jar_entries_added,
+                ) = build_dictionary_from_jar(
+                    mods_jar_files,
+                    translation_dictionary,
+                    translation_dictionary_lowercase,
+                )
+                add_log(
+                    f"JAR 파일 {jar_files_count}개에서 {jar_entries_added}개 항목 추가"
+                )
+
+                # 일반 파일에서 사전 구축
+                (
+                    translation_dictionary,
+                    translation_dictionary_lowercase,
+                    files_count,
+                    entries_added,
+                ) = build_dictionary_from_files(
+                    en_us_files,
+                    modpack_path,
+                    translation_dictionary,
+                    translation_dictionary_lowercase,
+                )
+                add_log(f"일반 파일 {files_count}개에서 {entries_added}개 항목 추가")
+
+                # 사전 정보 표시
+                total_files = jar_files_count + files_count
+                total_entries = jar_entries_added + entries_added
+                add_log(
+                    f"총 {total_files}개 파일에서 {total_entries}개 항목을 사전에 추가",
+                    "success",
+                )
+
+                with log_container:
+                    st.info(
+                        f"기존 번역에서 {total_files}개 파일을 분석하여 {total_entries}개 항목을 사전에 추가했습니다."
+                    )
+
+            status_text.text(
+                f"번역을 시작합니다... ({len(translation_dictionary)}개 사전 항목 사용)"
+            )
+            add_log(
+                f"번역 시작 ({len(translation_dictionary)}개 사전 항목 사용)",
+                "success",
+            )
+
+            # 번역 파일 매핑 (원본 -> 번역)
+            translated_files = {}
+
+            # 오류 발생 파일 목록
+            failed_files = []
+
+            # 파일 타입별 분류
+            file_types = {"config": [], "kubejs": [], "mods": []}
+
+            for file_path in en_us_files:
+                # tmp_ 로 시작하는 파일은 건너뛰기
+                if os.path.basename(file_path).startswith("tmp_"):
+                    continue
+
+                if "/config/" in file_path or "\\config\\" in file_path:
+                    file_types["config"].append(file_path)
+                elif "/kubejs/" in file_path or "\\kubejs\\" in file_path:
+                    file_types["kubejs"].append(file_path)
+                else:
+                    file_types["mods"].append(file_path)
+
+            # 선택되지 않은 카테고리 필터링
+            if not translate_config:
+                file_types["config"] = []
+            if not translate_kubejs:
+                file_types["kubejs"] = []
+            if not translate_mods:
+                file_types["mods"] = []
+
+            # 파일 타입별 출력 디렉토리 생성
+            with open(
+                os.path.join(output_path, "processing_info.json"),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                json.dump(file_types, f, ensure_ascii=False, indent=4)
+
+            # 카테고리별 번역 진행
+            total_files = len(en_us_files)
+            processed_files = 0
+
+            # 작업자별 상태 관리를 위한 딕셔너리
+            worker_statuses = {
+                i: {"active": False, "file": "", "progress": 0}
+                for i in range(max_workers)
+            }
+
+            # 진행 상황 업데이트 콜백 함수
+            async def update_progress(
+                worker_id,
+                file_path=None,
+                progress=None,
+                done=False,
+                total_items=None,
+                processed_items=None,
+            ):
+                if file_path:
+                    worker_statuses[worker_id]["file"] = file_path
+
+                if progress is not None:
+                    worker_statuses[worker_id]["progress"] = progress
+
+                if done:
+                    worker_statuses[worker_id]["active"] = False
+                    nonlocal processed_files
+                    processed_files += 1
+                    overall_progress = int((processed_files / total_files) * 100)
+                    overall_progress_bar.progress(overall_progress)
+                    overall_progress_text.markdown(
+                        f"**{processed_files}/{total_files}** ({overall_progress}%)"
+                    )
+                else:
+                    worker_statuses[worker_id]["active"] = True
+
+                # 작업자 상태 업데이트
+                status_prefix = (
+                    "🟢 Active"
+                    if worker_statuses[worker_id]["active"]
+                    else "⚪ Waiting"
+                )
+
+                if total_items and processed_items is not None:
+                    item_progress = f"{processed_items}/{total_items} 항목"
+                    worker_status_texts[worker_id].markdown(
+                        f"{status_prefix} - **{worker_statuses[worker_id]['file']}** ({item_progress})"
+                    )
+                else:
+                    worker_status_texts[worker_id].markdown(
+                        f"{status_prefix} - **{worker_statuses[worker_id]['file']}**"
+                    )
+
+                worker_progress_bars[worker_id].progress(
+                    worker_statuses[worker_id]["progress"]
+                )
+                worker_progress_texts[worker_id].markdown(
+                    f"**{worker_statuses[worker_id]['progress']}%**"
+                )
+
+                # 전체 진행 상황 업데이트
+                percent_complete = int((processed_files / total_files) * 100)
+                status_text.markdown(
+                    f"번역 중... **{processed_files}/{total_files}** 파일 완료 ({percent_complete}%) - "
+                    f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명"
+                )
+
+            # 사전 정렬 및 필터링 함수
+            def sort_and_filter_dictionary():
+                sorted_dict = {}
+                for k, v in sorted(
+                    translation_dictionary.items(),
+                    key=lambda item: len(item[0]),
+                    reverse=True,
+                ):
+                    if (
+                        len(k.split(" ")) <= 10
+                        and not re.search(r"[.?!%]", k)
+                        and not re.search(
+                            r"[.?!%]", ", ".join(v) if isinstance(v, list) else v
                         )
-                        status_text.text(f"속도 제한: {rpm} RPM ({rps:.2f} RPS)")
-                        add_log(f"속도 제한 설정: {rpm} RPM ({rps:.2f} RPS)")
+                    ):
+                        if isinstance(v, list):
+                            sorted_dict[k] = v
+                        else:
+                            sorted_dict[k] = v
+                return sorted_dict
+
+            # 각 카테고리별 처리 디렉토리 생성
+            for category in ["config", "kubejs", "mods"]:
+                os.makedirs(os.path.join(output_path, category, "input"), exist_ok=True)
+                os.makedirs(
+                    os.path.join(output_path, category, "output"), exist_ok=True
+                )
+
+            # 단일 파일 번역 함수
+            async def translate_file(worker_id, en_file, category):
+                try:
+                    # 작업자 상태 업데이트
+                    await update_progress(worker_id, en_file, 0)
 
                     # 현재 API 키 가져오기
+                    current_api_key = api_keys[
+                        st.session_state.api_key_index % total_api_keys
+                    ]
+
+                    # 다음 API 키 인덱스로 업데이트
                     st.session_state.api_key_index = (
                         st.session_state.api_key_index + 1
                     ) % total_api_keys
 
-                    add_log(
-                        f"API 키 사용 중: {st.session_state.api_key_index}/{total_api_keys}"
+                    # 파일 이름이 tmp_로 시작하면 건너뛰기
+                    if os.path.basename(en_file).startswith("tmp_"):
+                        await update_progress(worker_id, en_file, 100, True)
+                        return
+
+                    # 출력 파일 경로 설정
+                    rel_path = en_file.replace(modpack_path, "").lstrip("/\\")
+
+                    # 카테고리별 출력 경로 설정
+                    input_file = os.path.join(
+                        output_path,
+                        category,
+                        "input",
+                        rel_path.replace("en_us", LANG_CODE).replace(
+                            "en_US", LANG_CODE
+                        ),
                     )
 
-                except RuntimeError as e:
-                    add_log(f"모델 초기화 중 오류 발생: {e}", "error")
-                    st.error(
-                        f"모델 초기화 사용 중 오류가 발생했습니다.\n\n오류 메시지: {e}"
-                    )
-                    return
-
-                # 출력 디렉토리 생성
-                os.makedirs(output_path, exist_ok=True)
-                dictionary_path = os.path.join(output_path, "dictionary")
-                os.makedirs(dictionary_path, exist_ok=True)
-                add_log(f"출력 디렉토리 생성 완료: {output_path}")
-
-                # UUID 생성 (리소스팩 식별자로 사용)
-                uuid_str = str(uuid.uuid4())
-
-                # 모드팩 디렉토리에서 번역할 파일 찾기
-                status_text.text("번역 대상 파일 검색 중...")
-                add_log("번역 대상 파일 검색 중...")
-                en_us_files, mods_jar_files = process_modpack_directory(
-                    modpack_path, translate_config, translate_kubejs, translate_mods
-                )
-
-                if len(en_us_files) == 0:
-                    add_log("번역할 파일을 찾을 수 없습니다.", "warning")
-                    st.warning("번역할 파일을 찾을 수 없습니다.")
-                    return
-
-                status_text.text(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
-                add_log(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
-
-                # 기존 번역에서 사전 구축
-                if build_dict_from_existing:
-                    status_text.text("기존 번역에서 사전 구축 중...")
-                    add_log("기존 번역에서 사전 구축 중...")
-
-                    # JAR 파일에서 사전 구축
-                    (
-                        translation_dictionary,
-                        translation_dictionary_lowercase,
-                        jar_files_count,
-                        jar_entries_added,
-                    ) = build_dictionary_from_jar(
-                        mods_jar_files,
-                        translation_dictionary,
-                        translation_dictionary_lowercase,
-                    )
-                    add_log(
-                        f"JAR 파일 {jar_files_count}개에서 {jar_entries_added}개 항목 추가"
+                    output_file = os.path.join(
+                        output_path,
+                        category,
+                        "output",
+                        rel_path.replace("en_us", LANG_CODE).replace(
+                            "en_US", LANG_CODE
+                        ),
                     )
 
-                    # 일반 파일에서 사전 구축
-                    (
-                        translation_dictionary,
-                        translation_dictionary_lowercase,
-                        files_count,
-                        entries_added,
-                    ) = build_dictionary_from_files(
-                        en_us_files,
-                        modpack_path,
-                        translation_dictionary,
-                        translation_dictionary_lowercase,
-                    )
-                    add_log(
-                        f"일반 파일 {files_count}개에서 {entries_added}개 항목 추가"
-                    )
+                    # 이미 번역된 파일은 건너뛰기
+                    if skip_translated and os.path.exists(output_file):
+                        await update_progress(worker_id, en_file, 100, True)
+                        translated_files[en_file] = output_file
+                        return
 
-                    # 사전 정보 표시
-                    total_files = jar_files_count + files_count
-                    total_entries = jar_entries_added + entries_added
-                    add_log(
-                        f"총 {total_files}개 파일에서 {total_entries}개 항목을 사전에 추가",
-                        "success",
-                    )
-
-                    with log_container:
-                        st.info(
-                            f"기존 번역에서 {total_files}개 파일을 분석하여 {total_entries}개 항목을 사전에 추가했습니다."
-                        )
-
-                status_text.text(
-                    f"번역을 시작합니다... ({len(translation_dictionary)}개 사전 항목 사용)"
-                )
-                add_log(
-                    f"번역 시작 ({len(translation_dictionary)}개 사전 항목 사용)",
-                    "success",
-                )
-
-                # 번역 파일 매핑 (원본 -> 번역)
-                translated_files = {}
-
-                # 오류 발생 파일 목록
-                failed_files = []
-
-                # 파일 타입별 분류
-                file_types = {"config": [], "kubejs": [], "mods": []}
-
-                for file_path in en_us_files:
-                    # tmp_ 로 시작하는 파일은 건너뛰기
-                    if os.path.basename(file_path).startswith("tmp_"):
-                        continue
-
-                    if "/config/" in file_path or "\\config\\" in file_path:
-                        file_types["config"].append(file_path)
-                    elif "/kubejs/" in file_path or "\\kubejs\\" in file_path:
-                        file_types["kubejs"].append(file_path)
-                    else:
-                        file_types["mods"].append(file_path)
-
-                # 선택되지 않은 카테고리 필터링
-                if not translate_config:
-                    file_types["config"] = []
-                if not translate_kubejs:
-                    file_types["kubejs"] = []
-                if not translate_mods:
-                    file_types["mods"] = []
-
-                # 파일 타입별 출력 디렉토리 생성
-                with open(
-                    os.path.join(output_path, "processing_info.json"),
-                    "w",
-                    encoding="utf-8",
-                ) as f:
-                    json.dump(file_types, f, ensure_ascii=False, indent=4)
-
-                # 카테고리별 번역 진행
-                total_files = len(en_us_files)
-                processed_files = 0
-
-                # 작업자별 상태 관리를 위한 딕셔너리
-                worker_statuses = {
-                    i: {"active": False, "file": "", "progress": 0}
-                    for i in range(max_workers)
-                }
-
-                # 진행 상황 업데이트 콜백 함수
-                async def update_progress(
-                    worker_id,
-                    file_path=None,
-                    progress=None,
-                    done=False,
-                    total_items=None,
-                    processed_items=None,
-                ):
-                    if file_path:
-                        worker_statuses[worker_id]["file"] = file_path
-
-                    if progress is not None:
-                        worker_statuses[worker_id]["progress"] = progress
-
-                    if done:
-                        worker_statuses[worker_id]["active"] = False
-                        nonlocal processed_files
-                        processed_files += 1
-                        overall_progress = int((processed_files / total_files) * 100)
-                        overall_progress_bar.progress(overall_progress)
-                        overall_progress_text.markdown(
-                            f"**{processed_files}/{total_files}** ({overall_progress}%)"
-                        )
-                    else:
-                        worker_statuses[worker_id]["active"] = True
-
-                    # 작업자 상태 업데이트
-                    status_prefix = (
-                        "🟢 Active"
-                        if worker_statuses[worker_id]["active"]
-                        else "⚪ Waiting"
-                    )
-
-                    if total_items and processed_items is not None:
-                        item_progress = f"{processed_items}/{total_items} 항목"
-                        worker_status_texts[worker_id].markdown(
-                            f"{status_prefix} - **{worker_statuses[worker_id]['file']}** ({item_progress})"
-                        )
-                    else:
-                        worker_status_texts[worker_id].markdown(
-                            f"{status_prefix} - **{worker_statuses[worker_id]['file']}**"
-                        )
-
-                    worker_progress_bars[worker_id].progress(
-                        worker_statuses[worker_id]["progress"]
-                    )
-                    worker_progress_texts[worker_id].markdown(
-                        f"**{worker_statuses[worker_id]['progress']}%**"
-                    )
-
-                    # 전체 진행 상황 업데이트
-                    percent_complete = int((processed_files / total_files) * 100)
-                    status_text.markdown(
-                        f"번역 중... **{processed_files}/{total_files}** 파일 완료 ({percent_complete}%) - "
-                        f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명"
-                    )
-
-                # 사전 정렬 및 필터링 함수
-                def sort_and_filter_dictionary():
-                    sorted_dict = {}
-                    for k, v in sorted(
-                        translation_dictionary.items(),
-                        key=lambda item: len(item[0]),
-                        reverse=True,
-                    ):
-                        if (
-                            len(k.split(" ")) <= 10
-                            and not re.search(r"[.?!%]", k)
-                            and not re.search(
-                                r"[.?!%]", ", ".join(v) if isinstance(v, list) else v
-                            )
-                        ):
-                            if isinstance(v, list):
-                                sorted_dict[k] = v
-                            else:
-                                sorted_dict[k] = v
-                    return sorted_dict
-
-                # 각 카테고리별 처리 디렉토리 생성
-                for category in ["config", "kubejs", "mods"]:
-                    os.makedirs(
-                        os.path.join(output_path, category, "input"), exist_ok=True
-                    )
-                    os.makedirs(
-                        os.path.join(output_path, category, "output"), exist_ok=True
-                    )
-
-                # 단일 파일 번역 함수
-                async def translate_file(worker_id, en_file, category):
                     try:
-                        # 작업자 상태 업데이트
-                        await update_progress(worker_id, en_file, 0)
-
-                        # 현재 API 키 가져오기
-                        current_api_key = api_keys[
-                            st.session_state.api_key_index % total_api_keys
-                        ]
-
-                        # 다음 API 키 인덱스로 업데이트
-                        st.session_state.api_key_index = (
-                            st.session_state.api_key_index + 1
-                        ) % total_api_keys
-
-                        # 파일 이름이 tmp_로 시작하면 건너뛰기
-                        if os.path.basename(en_file).startswith("tmp_"):
+                        # 입력 파일 내용 추출
+                        en_data = extract_lang_content(en_file)
+                        if not en_data:
                             await update_progress(worker_id, en_file, 100, True)
                             return
 
-                        # 출력 파일 경로 설정
-                        rel_path = en_file.replace(modpack_path, "").lstrip("/\\")
-
-                        # 카테고리별 출력 경로 설정
-                        input_file = os.path.join(
-                            output_path,
-                            category,
-                            "input",
-                            rel_path.replace("en_us", LANG_CODE).replace(
-                                "en_US", LANG_CODE
-                            ),
-                        )
-
-                        output_file = os.path.join(
-                            output_path,
-                            category,
-                            "output",
-                            rel_path.replace("en_us", LANG_CODE).replace(
-                                "en_US", LANG_CODE
-                            ),
-                        )
-
-                        # 이미 번역된 파일은 건너뛰기
-                        if skip_translated and os.path.exists(output_file):
+                        # 데이터가 사전이 아니면 건너뛰기
+                        if not isinstance(en_data, dict):
                             await update_progress(worker_id, en_file, 100, True)
-                            translated_files[en_file] = output_file
                             return
 
-                        try:
-                            # 입력 파일 내용 추출
-                            en_data = extract_lang_content(en_file)
-                            if not en_data:
-                                await update_progress(worker_id, en_file, 100, True)
-                                return
+                        # 입력 디렉토리 생성 및 파일 저장
+                        input_dir = os.path.dirname(input_file)
+                        os.makedirs(input_dir, exist_ok=True)
 
-                            # 데이터가 사전이 아니면 건너뛰기
-                            if not isinstance(en_data, dict):
-                                await update_progress(worker_id, en_file, 100, True)
-                                return
+                        with open(input_file, "w", encoding="utf-8") as f:
+                            json.dump(en_data, f, ensure_ascii=False, indent=4)
 
-                            # 입력 디렉토리 생성 및 파일 저장
-                            input_dir = os.path.dirname(input_file)
-                            os.makedirs(input_dir, exist_ok=True)
+                        # 번역 처리
+                        nonlocal translation_dictionary
+                        nonlocal translation_dictionary_lowercase
+                        translation_dictionary = sort_and_filter_dictionary()
 
-                            with open(input_file, "w", encoding="utf-8") as f:
-                                json.dump(en_data, f, ensure_ascii=False, indent=4)
+                        # 임시 파일 경로 설정
+                        temp_output_path = output_file + ".tmp"
 
-                            # 번역 처리
-                            nonlocal translation_dictionary
-                            nonlocal translation_dictionary_lowercase
-                            translation_dictionary = sort_and_filter_dictionary()
+                        # 임시 출력 디렉토리 반드시 생성
+                        output_dir = os.path.dirname(output_file)
+                        os.makedirs(output_dir, exist_ok=True)
 
-                            # 임시 파일 경로 설정
-                            temp_output_path = output_file + ".tmp"
+                        # 번역 파일의 총 항목 수
+                        total_items = len(en_data)
+                        processed_items = 0
 
-                            # 임시 출력 디렉토리 반드시 생성
-                            output_dir = os.path.dirname(output_file)
-                            os.makedirs(output_dir, exist_ok=True)
-
-                            # 번역 파일의 총 항목 수
-                            total_items = len(en_data)
-                            processed_items = 0
-
-                            # 번역 함수 정의
-                            async def progress_callback():
-                                # 현재 진행 중인 항목 수 기반으로 진행 상황 업데이트
-                                nonlocal en_data
-                                nonlocal processed_items
-                                items_count = len(en_data)
-                                if items_count > 0:
-                                    # 처리된 항목 수 증가 (추정치)
-                                    processed_items = min(
-                                        processed_items
-                                        + max(1, int(items_count * 0.05)),
-                                        items_count - 1,
-                                    )
-
-                                    # 진행률 계산
-                                    progress_percent = int(
-                                        (processed_items / items_count) * 100
-                                    )
-
-                                    # 작업자의 진행 상황 업데이트 (최대 95%까지)
-                                    new_progress = min(progress_percent, 95)
-                                    await update_progress(
-                                        worker_id,
-                                        None,
-                                        new_progress,
-                                        False,
-                                        total_items,
-                                        processed_items,
-                                    )
-
-                            # 번역 실행
-                            try:
-                                # 공유 사전 불러오기
-                                async with dictionary_lock:
-                                    if os.path.exists(shared_dict_path):
-                                        try:
-                                            with open(
-                                                shared_dict_path, "r", encoding="utf-8"
-                                            ) as f:
-                                                shared_dictionary = json.load(f)
-                                                # 공유 사전으로 업데이트
-                                                translation_dictionary.update(
-                                                    shared_dictionary
-                                                )
-                                        except Exception as e:
-                                            logger.warning(f"공유 사전 로드 실패: {e}")
-
-                                result_dictionary = await minecraft_modpack_auto_translator.translate_json_file(
-                                    input_path=input_file,
-                                    output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
-                                    custom_dictionary_dict=translation_dictionary,
-                                    llm=get_translator(
-                                        provider=model_provider.lower(),
-                                        api_key=current_api_key,
-                                        model_name=selected_model,
-                                        api_base=api_base_url,
-                                        temperature=temperature,
-                                        rate_limiter=rate_limiter,
-                                    ),
-                                    max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
-                                    progress_callback=progress_callback,
+                        # 번역 함수 정의
+                        async def progress_callback():
+                            # 현재 진행 중인 항목 수 기반으로 진행 상황 업데이트
+                            nonlocal en_data
+                            nonlocal processed_items
+                            items_count = len(en_data)
+                            if items_count > 0:
+                                # 처리된 항목 수 증가 (추정치)
+                                processed_items = min(
+                                    processed_items + max(1, int(items_count * 0.05)),
+                                    items_count - 1,
                                 )
 
-                                # 공유 사전 업데이트
-                                async with dictionary_lock:
-                                    translation_dictionary.update(result_dictionary)
-                                    # 공유 사전 저장
-                                    with open(
-                                        shared_dict_path, "w", encoding="utf-8"
-                                    ) as f:
-                                        json.dump(
-                                            translation_dictionary,
-                                            f,
-                                            ensure_ascii=False,
-                                            indent=4,
-                                        )
+                                # 진행률 계산
+                                progress_percent = int(
+                                    (processed_items / items_count) * 100
+                                )
 
-                                # 모든 항목 처리 완료
-                                processed_items = total_items
+                                # 작업자의 진행 상황 업데이트 (최대 95%까지)
+                                new_progress = min(progress_percent, 95)
                                 await update_progress(
                                     worker_id,
                                     None,
-                                    95,
+                                    new_progress,
                                     False,
                                     total_items,
                                     processed_items,
                                 )
 
-                                # 원래 파일 형식으로 변환
-                                if os.path.exists(temp_output_path):
-                                    file_ext = os.path.splitext(en_file)[1]
-                                    parser_class = get_parser_by_extension(file_ext)
+                        # 번역 실행
+                        try:
+                            result_dictionary = await minecraft_modpack_auto_translator.translate_json_file(
+                                input_path=input_file,
+                                output_path=temp_output_path,  # 임시 파일에 JSON으로 저장
+                                custom_dictionary_dict=translation_dictionary,
+                                llm=get_translator(
+                                    provider=model_provider.lower(),
+                                    api_key=current_api_key,
+                                    model_name=selected_model,
+                                    api_base=api_base_url,
+                                    temperature=temperature,
+                                    rate_limiter=rate_limiter,
+                                ),
+                                max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
+                                progress_callback=progress_callback,
+                            )
 
-                                    if parser_class:
-                                        # 임시 JSON 파일에서 데이터 로드
-                                        with open(
-                                            temp_output_path, "r", encoding="utf-8"
-                                        ) as f:
-                                            data = json.load(f)
+                            # 모든 항목 처리 완료
+                            processed_items = total_items
+                            await update_progress(
+                                worker_id,
+                                None,
+                                95,
+                                False,
+                                total_items,
+                                processed_items,
+                            )
 
-                                        # 원본 파일 형식으로 변환
-                                        content = parser_class.save(data)
+                            # 원래 파일 형식으로 변환
+                            if os.path.exists(temp_output_path):
+                                file_ext = os.path.splitext(en_file)[1]
+                                parser_class = get_parser_by_extension(file_ext)
 
-                                        # 최종 파일 저장
-                                        with open(
-                                            output_file, "w", encoding="utf-8"
-                                        ) as f:
-                                            f.write(content)
+                                if parser_class:
+                                    # 임시 JSON 파일에서 데이터 로드
+                                    with open(
+                                        temp_output_path, "r", encoding="utf-8"
+                                    ) as f:
+                                        data = json.load(f)
 
-                                        # 임시 파일 삭제
-                                        try:
-                                            os.remove(temp_output_path)
-                                        except OSError:
-                                            logger.warning(
-                                                f"임시 파일을 삭제할 수 없습니다: {temp_output_path}"
-                                            )
+                                    # 원본 파일 형식으로 변환
+                                    content = parser_class.save(data)
 
-                                        # 작업 완료 표시
-                                        await update_progress(
-                                            worker_id,
-                                            None,
-                                            100,
-                                            True,
-                                            total_items,
-                                            total_items,
-                                        )
-                                    else:
+                                    # 최종 파일 저장
+                                    with open(output_file, "w", encoding="utf-8") as f:
+                                        f.write(content)
+
+                                    # 임시 파일 삭제
+                                    try:
+                                        os.remove(temp_output_path)
+                                    except OSError:
                                         logger.warning(
-                                            f"지원되지 않는 파일 형식: {file_ext}"
+                                            f"임시 파일을 삭제할 수 없습니다: {temp_output_path}"
                                         )
-                                        await update_progress(
-                                            worker_id, None, 100, True
-                                        )
+
+                                    # 작업 완료 표시
+                                    await update_progress(
+                                        worker_id,
+                                        None,
+                                        100,
+                                        True,
+                                        total_items,
+                                        total_items,
+                                    )
                                 else:
                                     logger.warning(
-                                        f"번역 결과 파일이 생성되지 않았습니다: {temp_output_path}"
+                                        f"지원되지 않는 파일 형식: {file_ext}"
                                     )
                                     await update_progress(worker_id, None, 100, True)
-                            except Exception as e:
-                                logger.error(
-                                    f"파일 처리 중 오류 발생: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+                            else:
+                                logger.warning(
+                                    f"번역 결과 파일이 생성되지 않았습니다: {temp_output_path}"
                                 )
-                                logger.error(traceback.format_exc())
-
-                                # 오류 파일 기록
-                                failed_file_info = {
-                                    "path": en_file,
-                                    "error": str(e),
-                                    "category": category,
-                                }
-                                failed_files.append(failed_file_info)
-
-                                await update_progress(worker_id, en_file, 100, True)
+                                await update_progress(worker_id, None, 100, True)
 
                         except Exception as e:
                             logger.error(
@@ -1310,11 +1249,10 @@ def main():
                             await update_progress(worker_id, en_file, 100, True)
 
                     except Exception as e:
-                        error_traceback = traceback.format_exc()
                         logger.error(
-                            f"파일 번역 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
+                            f"파일 처리 중 오류 발생: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
                         )
-                        logger.error(error_traceback)
+                        logger.error(traceback.format_exc())
 
                         # 오류 파일 기록
                         failed_file_info = {
@@ -1326,205 +1264,218 @@ def main():
 
                         await update_progress(worker_id, en_file, 100, True)
 
-                # 병렬 번역 실행 함수
-                async def run_translation():
-                    # 모든 카테고리의 파일을 하나의 리스트로 통합
-                    all_files = []
-                    for category, files in file_types.items():
-                        for f in files:
-                            all_files.append((f, category))
-
-                    # 작업 큐 생성
-                    queue = asyncio.Queue()
-
-                    # 큐에 모든 파일 추가
-                    for file_tuple in all_files:
-                        await queue.put(file_tuple)
-
-                    # 워커 함수 정의
-                    async def worker(worker_id):
-                        while not queue.empty():
-                            try:
-                                file_path, category = await queue.get()
-                                await translate_file(worker_id, file_path, category)
-                                queue.task_done()
-                            except Exception as e:
-                                logger.error(f"워커 {worker_id} 오류: {e}")
-                                queue.task_done()
-
-                    # 워커 시작
-                    workers = []
-                    for i in range(max_workers):
-                        task = asyncio.create_task(worker(i))
-                        workers.append(task)
-
-                    # 모든 작업 완료 대기
-                    await queue.join()
-
-                    # 워커 태스크 취소
-                    for task in workers:
-                        task.cancel()
-
-                    # 취소된 태스크 처리 완료 대기
-                    await asyncio.gather(*workers, return_exceptions=True)
-
-                # 비동기 번역 실행
-                asyncio.run(run_translation())
-
-                # 리소스팩 생성
-                overall_progress_bar.progress(95)
-                overall_progress_text.markdown(f"**{total_files}/{total_files}** (95%)")
-                status_text.markdown("리소스팩 생성 중...")
-
-                # 카테고리별 리소스팩 정보
-                categories = {
-                    "mods": {
-                        "name": "Mods",
-                        "suffix": "_MOD_TRANSLATION",
-                        "emoji": "🟢",
-                        "icon": "🎮",
-                        "warning": False,
-                    },
-                    "config": {
-                        "name": "Config",
-                        "suffix": "_CONFIG_TRANSLATION",
-                        "emoji": "🔷",
-                        "icon": "⚙️",
-                        "warning": "Config 파일은 모드팩에 따라 리소스팩으로 인식되지 못하는 경우가 있을 수 있습니다. 압축을 모드팩 Client 폴더에 풀어서 덮어쓰기 하세요.",
-                    },
-                    "kubejs": {
-                        "name": "KubeJS",
-                        "suffix": "_KUBEJS_TRANSLATION",
-                        "emoji": "🟡",
-                        "icon": "📜",
-                        "warning": "KubeJS 파일은 모드팩에 따라 리소스팩으로 인식되지 못하는 경우가 있을 수 있습니다. 압축을 모드팩 Client 폴더에 풀어서 덮어쓰기 하세요.",
-                    },
-                }
-
-                # 생성된 리소스팩을 저장할 리스트와 카테고리별 분류
-                created_resourcepacks = []
-                category_packs = {"All": []}
-
-                # 카테고리별 리소스팩 생성
-                for category, info in categories.items():
-                    # 선택되지 않은 카테고리는 건너뜀
-                    if (
-                        (category == "config" and not translate_config)
-                        or (category == "kubejs" and not translate_kubejs)
-                        or (category == "mods" and not translate_mods)
-                    ):
-                        continue
-
-                    output_dir = os.path.join(output_path, category, "output", "**")
-                    output_glob_path = normalize_glob_path(output_dir)
-                    if len(glob(output_glob_path, recursive=True)) > 1:
-                        # 리소스팩 생성
-                        resourcepack_zip = create_resourcepack(
-                            output_path,
-                            [f"{output_path}/{category}/output"],
-                            resourcepack_name + info["suffix"],
-                        )
-
-                        # 생성된 리소스팩 정보 저장
-                        pack_info = {
-                            "category": category,
-                            "info": info,
-                            "path": resourcepack_zip,
-                        }
-                        created_resourcepacks.append(pack_info)
-
-                        # 카테고리별 분류에도 추가
-                        category_name = info["name"]
-                        if category_name not in category_packs:
-                            category_packs[category_name] = []
-                        category_packs[category_name].append(pack_info)
-                        category_packs["All"].append(pack_info)
-
-                # 리소스팩이 생성되었을 경우에만 표시
-                if created_resourcepacks:
-                    st.header("🎯 번역 결과")
-
-                    # 탭 생성 - 모두 + 각 카테고리별
-                    tab_titles = ["All"]
-                    for pack in created_resourcepacks:
-                        cat_name = pack["info"]["name"]
-                        if cat_name not in tab_titles:
-                            tab_titles.append(cat_name)
-
-                    tabs = st.tabs(tab_titles)
-
-                    # 각 탭 내용 채우기
-                    for i, tab_name in enumerate(tab_titles):
-                        with tabs[i]:
-                            for pack in category_packs[tab_name]:
-                                info = pack["info"]
-                                cat_name = info["name"]
-
-                                # 확장 가능한 섹션으로 표시
-                                with st.expander(
-                                    f"{info['icon']} {cat_name} 리소스팩", expanded=True
-                                ):
-                                    # 파일 경로와 다운로드 영역
-                                    st.code(
-                                        f"📁 {pack['path']}",
-                                        language=None,
-                                    )
-
-                                    # 사용 방법 안내
-                                    st.info(
-                                        "💡 **사용 방법**\n\n마인크래프트 설정에서 리소스팩 탭을 선택하여 이 리소스팩을 적용하세요."
-                                    )
-
-                                    # 경고 메시지가 있는 경우 표시
-                                    if info["warning"]:
-                                        st.warning(
-                                            f"⚠️ **주의사항**\n\n{info['warning']}"
-                                        )
-                else:
-                    st.warning("번역된 파일이 없어 리소스팩이 생성되지 않았습니다.")
-
-                # 최종 진행 상황
-                overall_progress_bar.progress(100)
-                overall_progress_text.markdown(
-                    f"**{total_files}/{total_files}** (100%)"
-                )
-                status_text.markdown("번역 완료!")
-
-                # 최종 사전 저장
-                final_dict_path = os.path.join(
-                    output_path, "total_dictionary", f"{uuid_str}_final.json"
-                )
-                os.makedirs(os.path.dirname(final_dict_path), exist_ok=True)
-                with open(final_dict_path, "w", encoding="utf-8") as f:
-                    json.dump(translation_dictionary, f, ensure_ascii=False, indent=4)
-
-                # 결과 표시
-                st.success(
-                    f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일은 건너뛰고 번역 되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
-                )
-
-                # 오류 발생 파일 표시
-                if failed_files:
-                    with st.expander(
-                        f"오류 발생 파일 목록 ({len(failed_files)}개)", expanded=False
-                    ):
-                        for i, failed_file in enumerate(failed_files):
-                            file_basename = os.path.basename(failed_file["path"])
-                            st.markdown(
-                                f"**{i + 1}. {file_basename}** ({failed_file['category']})"
-                            )
-                            st.markdown(f"  - 경로: `{failed_file['path']}`")
-                            st.markdown(f"  - 오류: {failed_file['error']}")
-                            st.markdown("---")
-
-                    # 오류 파일 목록 저장
-                    failed_list_path = os.path.join(output_path, "failed_files.json")
-                    with open(failed_list_path, "w", encoding="utf-8") as f:
-                        json.dump(failed_files, f, ensure_ascii=False, indent=4)
-
-                    st.warning(
-                        f"오류 발생 파일 목록이 {failed_list_path}에 저장되었습니다. 해당 파일들은 '__FAILED__' 접두어가 붙은 파일로 복사되어 있습니다."
+                except Exception as e:
+                    error_traceback = traceback.format_exc()
+                    logger.error(
+                        f"파일 번역 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
                     )
+                    logger.error(error_traceback)
+
+                    # 오류 파일 기록
+                    failed_file_info = {
+                        "path": en_file,
+                        "error": str(e),
+                        "category": category,
+                    }
+                    failed_files.append(failed_file_info)
+
+                    await update_progress(worker_id, en_file, 100, True)
+
+            # 병렬 번역 실행 함수
+            async def run_translation():
+                # 모든 카테고리의 파일을 하나의 리스트로 통합
+                all_files = []
+                for category, files in file_types.items():
+                    for f in files:
+                        all_files.append((f, category))
+
+                # 작업 큐 생성
+                queue = asyncio.Queue()
+
+                # 큐에 모든 파일 추가
+                for file_tuple in all_files:
+                    await queue.put(file_tuple)
+
+                # 워커 함수 정의
+                async def worker(worker_id):
+                    while not queue.empty():
+                        try:
+                            file_path, category = await queue.get()
+                            await translate_file(worker_id, file_path, category)
+                            queue.task_done()
+                        except Exception as e:
+                            logger.error(f"워커 {worker_id} 오류: {e}")
+                            queue.task_done()
+
+                # 워커 시작
+                workers = []
+                for i in range(max_workers):
+                    task = asyncio.create_task(worker(i))
+                    workers.append(task)
+
+                # 모든 작업 완료 대기
+                await queue.join()
+
+                # 워커 태스크 취소
+                for task in workers:
+                    task.cancel()
+
+                # 취소된 태스크 처리 완료 대기
+                await asyncio.gather(*workers, return_exceptions=True)
+
+            # 비동기 번역 실행
+            asyncio.run(run_translation())
+
+            # 리소스팩 생성
+            overall_progress_bar.progress(95)
+            overall_progress_text.markdown(f"**{total_files}/{total_files}** (95%)")
+            status_text.markdown("리소스팩 생성 중...")
+
+            # 카테고리별 리소스팩 정보
+            categories = {
+                "mods": {
+                    "name": "Mods",
+                    "suffix": "_MOD_TRANSLATION",
+                    "emoji": "🟢",
+                    "icon": "🎮",
+                    "warning": False,
+                },
+                "config": {
+                    "name": "Config",
+                    "suffix": "_CONFIG_TRANSLATION",
+                    "emoji": "🔷",
+                    "icon": "⚙️",
+                    "warning": "Config 파일은 모드팩에 따라 리소스팩으로 인식되지 못하는 경우가 있을 수 있습니다. 압축을 모드팩 Client 폴더에 풀어서 덮어쓰기 하세요.",
+                },
+                "kubejs": {
+                    "name": "KubeJS",
+                    "suffix": "_KUBEJS_TRANSLATION",
+                    "emoji": "🟡",
+                    "icon": "📜",
+                    "warning": "KubeJS 파일은 모드팩에 따라 리소스팩으로 인식되지 못하는 경우가 있을 수 있습니다. 압축을 모드팩 Client 폴더에 풀어서 덮어쓰기 하세요.",
+                },
+            }
+
+            # 생성된 리소스팩을 저장할 리스트와 카테고리별 분류
+            created_resourcepacks = []
+            category_packs = {"All": []}
+
+            # 카테고리별 리소스팩 생성
+            for category, info in categories.items():
+                # 선택되지 않은 카테고리는 건너뜀
+                if (
+                    (category == "config" and not translate_config)
+                    or (category == "kubejs" and not translate_kubejs)
+                    or (category == "mods" and not translate_mods)
+                ):
+                    continue
+
+                output_dir = os.path.join(output_path, category, "output", "**")
+                output_glob_path = normalize_glob_path(output_dir)
+                if len(glob(output_glob_path, recursive=True)) > 1:
+                    # 리소스팩 생성
+                    resourcepack_zip = create_resourcepack(
+                        output_path,
+                        [f"{output_path}/{category}/output"],
+                        resourcepack_name + info["suffix"],
+                    )
+
+                    # 생성된 리소스팩 정보 저장
+                    pack_info = {
+                        "category": category,
+                        "info": info,
+                        "path": resourcepack_zip,
+                    }
+                    created_resourcepacks.append(pack_info)
+
+                    # 카테고리별 분류에도 추가
+                    category_name = info["name"]
+                    if category_name not in category_packs:
+                        category_packs[category_name] = []
+                    category_packs[category_name].append(pack_info)
+                    category_packs["All"].append(pack_info)
+
+            # 리소스팩이 생성되었을 경우에만 표시
+            if created_resourcepacks:
+                st.header("🎯 번역 결과")
+
+                # 탭 생성 - 모두 + 각 카테고리별
+                tab_titles = ["All"]
+                for pack in created_resourcepacks:
+                    cat_name = pack["info"]["name"]
+                    if cat_name not in tab_titles:
+                        tab_titles.append(cat_name)
+
+                tabs = st.tabs(tab_titles)
+
+                # 각 탭 내용 채우기
+                for i, tab_name in enumerate(tab_titles):
+                    with tabs[i]:
+                        for pack in category_packs[tab_name]:
+                            info = pack["info"]
+                            cat_name = info["name"]
+
+                            # 확장 가능한 섹션으로 표시
+                            with st.expander(
+                                f"{info['icon']} {cat_name} 리소스팩", expanded=True
+                            ):
+                                # 파일 경로와 다운로드 영역
+                                st.code(
+                                    f"📁 {pack['path']}",
+                                    language=None,
+                                )
+
+                                # 사용 방법 안내
+                                st.info(
+                                    "💡 **사용 방법**\n\n마인크래프트 설정에서 리소스팩 탭을 선택하여 이 리소스팩을 적용하세요."
+                                )
+
+                                # 경고 메시지가 있는 경우 표시
+                                if info["warning"]:
+                                    st.warning(f"⚠️ **주의사항**\n\n{info['warning']}")
+            else:
+                st.warning("번역된 파일이 없어 리소스팩이 생성되지 않았습니다.")
+
+            # 최종 진행 상황
+            overall_progress_bar.progress(100)
+            overall_progress_text.markdown(f"**{total_files}/{total_files}** (100%)")
+            status_text.markdown("번역 완료!")
+
+            # 최종 사전 저장
+            final_dict_path = os.path.join(
+                output_path, "total_dictionary", f"{uuid_str}_final.json"
+            )
+            os.makedirs(os.path.dirname(final_dict_path), exist_ok=True)
+            with open(final_dict_path, "w", encoding="utf-8") as f:
+                json.dump(translation_dictionary, f, ensure_ascii=False, indent=4)
+
+            # 결과 표시
+            st.success(
+                f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일은 건너뛰고 번역 되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
+            )
+
+            # 오류 발생 파일 표시
+            if failed_files:
+                with st.expander(
+                    f"오류 발생 파일 목록 ({len(failed_files)}개)", expanded=False
+                ):
+                    for i, failed_file in enumerate(failed_files):
+                        file_basename = os.path.basename(failed_file["path"])
+                        st.markdown(
+                            f"**{i + 1}. {file_basename}** ({failed_file['category']})"
+                        )
+                        st.markdown(f"  - 경로: `{failed_file['path']}`")
+                        st.markdown(f"  - 오류: {failed_file['error']}")
+                        st.markdown("---")
+
+                # 오류 파일 목록 저장
+                failed_list_path = os.path.join(output_path, "failed_files.json")
+                with open(failed_list_path, "w", encoding="utf-8") as f:
+                    json.dump(failed_files, f, ensure_ascii=False, indent=4)
+
+                st.warning(
+                    f"오류 발생 파일 목록이 {failed_list_path}에 저장되었습니다. 해당 파일들은 '__FAILED__' 접두어가 붙은 파일로 복사되어 있습니다."
+                )
 
         except Exception as e:
             error_traceback = traceback.format_exc()
