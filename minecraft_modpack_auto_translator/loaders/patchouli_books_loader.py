@@ -43,7 +43,11 @@ class PatchouliBooksLoader(BaseLoader):
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
+
+        # 동기 메서드는 일반적으로 사용되지 않기 때문에 경고만 로깅합니다
+        self.logger.warning(
+            "동기 메서드는 LLM이 없어 번역이 제대로 수행되지 않을 수 있습니다."
+        )
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
@@ -57,7 +61,6 @@ class PatchouliBooksLoader(BaseLoader):
                             {
                                 "text": page[k],
                                 "custom_dictionary_dict": custom_dictionary_dict,
-                                "llm": llm,
                                 "context": context,
                             }
                         )

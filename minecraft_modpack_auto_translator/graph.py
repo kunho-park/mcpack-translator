@@ -548,7 +548,24 @@ async def translate_json_file(
     progress_callback=None,
     external_context=None,
 ):
-    """JSON 파일을 비동기적으로 번역합니다."""
+    """
+    JSON 파일을 비동기적으로 번역합니다.
+
+    Parameters:
+        input_path: 번역할 JSON 파일 경로
+        output_path: 번역 결과를 저장할 경로
+        custom_dictionary_dict: 사용자 정의 사전
+        llm: 번역에 사용할 언어 모델 인스턴스 (필수)
+        max_workers: 동시 작업자 수
+        progress_callback: 진행 상황 콜백 함수
+        external_context: 외부에서 제공하는 TranslationContext 객체
+    """
+    # llm이 제공되지 않은 경우 오류 발생
+    if llm is None:
+        raise ValueError(
+            "llm은 필수 인자입니다. 번역을 위해 언어 모델을 제공해야 합니다."
+        )
+
     # 입력 JSON 파일 로드
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -565,16 +582,12 @@ async def translate_json_file(
     # 컨텍스트 생성 또는 외부에서 전달된 컨텍스트 사용
     if external_context:
         context = external_context
-        # 컨텍스트에 LLM 설정 (기존 LLM이 없는 경우)
-        if context.llm is None and llm is not None:
-            context.llm = llm
         logger.info("외부에서 제공된 컨텍스트를 사용합니다.")
     else:
         # 공유 컨텍스트 생성 (모든 워커가 이 컨텍스트를 공유함)
         context = TranslationContext(
             translation_graph=translation_graph,
             custom_dictionary_dict=custom_dictionary_dict,
-            llm=llm,
             registry=registry,
         )
 

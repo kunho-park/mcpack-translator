@@ -43,15 +43,17 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
+
+        # 동기 메서드는 일반적으로 사용되지 않기 때문에 경고만 로깅합니다
+        self.logger.warning(
+            "동기 메서드는 LLM이 없어 번역이 제대로 수행되지 않을 수 있습니다."
+        )
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
             return value
 
-        def translate_value(
-            value, translation_graph, custom_dictionary_dict, llm, context
-        ):
+        def translate_value(value, translation_graph, custom_dictionary_dict, context):
             """
             값을 재귀적으로 번역하는 함수입니다.
             문자열, 리스트, 딕셔너리를 처리합니다.
@@ -63,7 +65,6 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                     {
                         "text": value,
                         "custom_dictionary_dict": custom_dictionary_dict,
-                        "llm": llm,
                         "context": context,
                     }
                 )
@@ -74,7 +75,6 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                         "\n".join(value),
                         translation_graph,
                         custom_dictionary_dict,
-                        llm,
                         context,
                     ).split("\n")
                 else:
@@ -83,7 +83,6 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             item,
                             translation_graph,
                             custom_dictionary_dict,
-                            llm,
                             context,
                         )
                         for item in value
@@ -95,7 +94,6 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             value[k],
                             translation_graph,
                             custom_dictionary_dict,
-                            llm,
                             context,
                         )
                 return value
@@ -110,7 +108,6 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             quest[k],
                             translation_graph,
                             custom_dictionary_dict,
-                            llm,
                             context,
                         )
         return value
@@ -238,7 +235,11 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
+
+        # 동기 메서드는 일반적으로 사용되지 않기 때문에 경고만 로깅합니다
+        self.logger.warning(
+            "동기 메서드는 LLM이 없어 번역이 제대로 수행되지 않을 수 있습니다."
+        )
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
@@ -249,7 +250,6 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
             {
                 "text": value_dict["text"],
                 "custom_dictionary_dict": custom_dictionary_dict,
-                "llm": llm,
                 "context": context,
             }
         )
