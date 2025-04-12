@@ -759,24 +759,6 @@ def main():
                 log_container = st.expander("번역 로그", expanded=True)
                 logs = []  # 로그 메시지를 저장할 리스트
 
-                # 모든 번역 작업에서 공유할 TranslationContext 생성
-                from minecraft_modpack_auto_translator.graph import (
-                    create_translation_graph,
-                    registry,
-                )
-                from minecraft_modpack_auto_translator.loaders.context import (
-                    TranslationContext,
-                )
-
-                # 공유 컨텍스트 생성
-                shared_context = TranslationContext(
-                    translation_graph=create_translation_graph(),
-                    custom_dictionary_dict=translation_dictionary,
-                    llm=None,  # 각 번역 작업에서 자신의 API 키로 설정
-                    registry=registry,
-                )
-                shared_context.initialize_dictionaries()
-
                 # 로그 출력 함수
                 def add_log(message, level="info"):
                     logs.append(
@@ -797,6 +779,37 @@ def main():
                                 st.error(f"[{log['time']}] {log['message']}")
                             elif log["level"] == "success":
                                 st.success(f"[{log['time']}] {log['message']}")
+
+                # 모든 번역 작업에서 공유할 TranslationContext 생성
+                from minecraft_modpack_auto_translator.graph import (
+                    create_translation_graph,
+                    registry,
+                )
+                from minecraft_modpack_auto_translator.loaders.context import (
+                    TranslationContext,
+                )
+
+                # 공유 컨텍스트 생성
+                shared_context = TranslationContext(
+                    translation_graph=create_translation_graph(),
+                    custom_dictionary_dict=translation_dictionary,
+                    llm=None,  # 각 번역 작업에서 자신의 API 키로 설정
+                    registry=registry,
+                )
+                shared_context.initialize_dictionaries()
+
+                try:
+                    dict_size = len(shared_context.get_dictionary())
+                    add_log(
+                        f"공유 번역 컨텍스트 생성 완료: {dict_size}개 사전 항목",
+                        "success",
+                    )
+                except Exception as e:
+                    add_log(
+                        f"공유 컨텍스트 생성은 완료됐으나 사전 정보 확인 중 오류: {e}",
+                        "warning",
+                    )
+                    add_log("번역은 정상적으로 진행됩니다.", "info")
 
             # 작업자별 진행 상황 컨테이너
             worker_progress_bars = {}
