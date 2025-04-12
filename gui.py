@@ -1211,6 +1211,26 @@ def main():
                                         ) as f:
                                             f.write(content)
 
+                                        # 번역 과정에서 업데이트된 사전 중간 저장
+                                        dict_temp_path = os.path.join(
+                                            output_path,
+                                            "total_dictionary",
+                                            f"temp_dict_{uuid.uuid4().hex[:8]}.json",
+                                        )
+                                        os.makedirs(
+                                            os.path.dirname(dict_temp_path),
+                                            exist_ok=True,
+                                        )
+                                        with open(
+                                            dict_temp_path, "w", encoding="utf-8"
+                                        ) as f:
+                                            json.dump(
+                                                translation_dictionary,
+                                                f,
+                                                ensure_ascii=False,
+                                                indent=4,
+                                            )
+
                                         # 임시 파일 삭제
                                         try:
                                             os.remove(temp_output_path)
