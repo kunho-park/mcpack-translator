@@ -638,16 +638,6 @@ async def translate_json_file(
                                         translated_data, f, ensure_ascii=False, indent=4
                                     )
 
-                                # 사전 저장 (임시 파일에)
-                                dict_temp_path = f"{output_path}.dict.json"
-                                with open(dict_temp_path, "w", encoding="utf-8") as f:
-                                    json.dump(
-                                        context.get_dictionary(),
-                                        f,
-                                        ensure_ascii=False,
-                                        indent=4,
-                                    )
-
                                 last_save_size = current_dict_size
                                 logger.info(
                                     f"중간 사전 저장 완료: {current_dict_size}개 항목"

@@ -1220,6 +1220,24 @@ def main():
                                 processed_items,
                             )
 
+                            # 사전 저장 (임시 파일에)
+                            # 동시성 문제 방지를 위해 사전의 복사본 생성
+                            try:
+                                dictionary_copy = dict(shared_context.get_dictionary())
+                                with open(
+                                    os.path.join(output_path, "shared_dict.json"),
+                                    "w",
+                                    encoding="utf-8",
+                                ) as f:
+                                    json.dump(
+                                        dictionary_copy,
+                                        f,
+                                        ensure_ascii=False,
+                                        indent=4,
+                                    )
+                            except Exception as e:
+                                logger.debug(f"사전 저장 중 오류 발생: {e}")
+
                             # 원래 파일 형식으로 변환
                             if os.path.exists(temp_output_path):
                                 file_ext = os.path.splitext(en_file)[1]
