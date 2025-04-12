@@ -43,7 +43,12 @@ class BaseLoader(ABC):
         pass
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         주어진 값을 비동기적으로 처리합니다.
@@ -51,9 +56,11 @@ class BaseLoader(ABC):
         필요시 하위 클래스에서 오버라이드하여 실제 비동기 구현을 제공할 수 있습니다.
 
         Args:
-            path: JSON 파일 내 키 경로
+            input_path: 입력 JSON 파일 경로
+            key: 처리할 키
             value: 처리할 값
             context: 번역 그래프, 사전 등 컨텍스트 정보
+            llm: 언어 모델 인스턴스 (없으면 None)
 
         Returns:
             처리된 값

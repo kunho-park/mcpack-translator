@@ -31,7 +31,12 @@ class DefaultLoader(BaseLoader):
         return value
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         비동기적으로 그대로 반환합니다.

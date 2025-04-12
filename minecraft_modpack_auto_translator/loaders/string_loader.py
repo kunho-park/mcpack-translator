@@ -54,13 +54,12 @@ class StringLoader(BaseLoader):
             return value
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self, input_path: str, key: str, value: Any, context: TranslationContext, llm=None
     ) -> Any:
         """
         문자열을 비동기적으로 번역합니다.
         """
         translation_graph = context.translation_graph
-        llm = context.llm
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
@@ -70,12 +69,16 @@ class StringLoader(BaseLoader):
             # 개행 문자 처리
             processed_value = value.replace("\\n", "\n")
 
+            # LLM이 명시적으로 전달되지 않았으면 인자를 통해 제공된 것 사용
+            if not llm:
+                self.logger.warning("LLM이 전달되지 않았습니다. 외부에서 전달 받은 LLM 파라미터를 사용합니다.")
+
             # 컨텍스트 객체를 상태에 전달 (비동기 호출)
             state = await translation_graph.ainvoke(
                 {
                     "text": processed_value,
                     "custom_dictionary_dict": context.custom_dictionary_dict,
-                    "llm": llm,
+                    "llm": llm,  # llm을 직접 state에 전달
                     "context": context,
                 }
             )

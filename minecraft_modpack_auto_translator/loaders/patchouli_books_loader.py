@@ -65,14 +65,18 @@ class PatchouliBooksLoader(BaseLoader):
         return value
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         딕셔너리 값을 비동기적으로 처리합니다.
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")

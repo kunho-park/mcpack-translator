@@ -11,14 +11,11 @@ _GLOBAL_LOCK = asyncio.Lock()
 
 
 class TranslationContext:
-    """번역 컨텍스트 클래스"""
+    """번역 컨텍스트 클래스 - 사전 관리에 집중"""
 
-    def __init__(
-        self, translation_graph, custom_dictionary_dict=None, llm=None, registry=None
-    ):
+    def __init__(self, translation_graph, custom_dictionary_dict=None, registry=None):
         self.translation_graph = translation_graph
         self.custom_dictionary_dict = custom_dictionary_dict or {}
-        self.llm = llm
         self.registry = registry
 
         # 번역 컨텍스트가 생성될 때 공유 사전 초기화

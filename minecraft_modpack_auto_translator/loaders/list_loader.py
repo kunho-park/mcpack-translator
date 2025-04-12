@@ -63,13 +63,17 @@ class ListLoader(BaseLoader):
             return value
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         리스트 내 각 문자열 항목을 비동기적으로 번역합니다.
         """
         translation_graph = context.translation_graph
-        llm = context.llm
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")

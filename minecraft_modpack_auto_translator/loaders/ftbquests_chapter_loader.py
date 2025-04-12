@@ -114,16 +114,20 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             context,
                         )
         return value
-        
+
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         딕셔너리 값을 비동기적으로 처리합니다.
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
@@ -252,16 +256,20 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
         value_dict["text"] = state["restored_text"]
 
         return json.dumps(value_dict, ensure_ascii=False)
-        
+
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         딕셔너리 값을 비동기적으로 처리합니다.
         """
         translation_graph = context.translation_graph
         custom_dictionary_dict = context.custom_dictionary_dict
-        llm = context.llm
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
@@ -277,5 +285,4 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
             }
         )
         value_dict["text"] = state["restored_text"]
-
-        return json.dumps(value_dict, ensure_ascii=False)
+        return json.dumps(value_dict)

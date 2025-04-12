@@ -793,7 +793,6 @@ def main():
                 shared_context = TranslationContext(
                     translation_graph=create_translation_graph(),
                     custom_dictionary_dict=translation_dictionary,
-                    llm=None,  # 각 번역 작업에서 자신의 API 키로 설정
                     registry=registry,
                 )
                 shared_context.initialize_dictionaries()

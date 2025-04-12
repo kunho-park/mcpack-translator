@@ -174,10 +174,13 @@ async def retrieve_translations(state):
     filtered_english_words.extend(additional_words)
 
     finded = []
-    # 사전에서 영어 단어가 포함된 항목 찾기
+    # 사전에서 영어 단어가 포함된 항목 찾기 (사전의 키 목록을 먼저 복사)
+    # 동시성 문제 방지를 위해 사전의 키 목록을 미리 복사
+    dict_keys = list(translation_dictionary.keys())
+
     for word in filtered_english_words:
         if len(word) > 3:  # 너무 짧은 단어는 제외
-            for dict_key in translation_dictionary.keys():
+            for dict_key in dict_keys:
                 if word.lower() in dict_key.lower().split():
                     if dict_key not in finded:
                         finded.append(dict_key)
@@ -215,9 +218,13 @@ async def retrieve_translations(state):
 async def translate_text(state):
     text_to_translate = state["replaced_text"]
     text_replaced_with_korean_dictionary = state["replaced_text"]
-    llm: BaseChatModel = state["llm"]
+    llm: BaseChatModel = state["llm"]  # 항상 state에서 llm 가져오기
     context = state["context"]
     context.initialize_dictionaries()
+
+    # llm이 없으면 오류 발생
+    if llm is None:
+        raise ValueError("LLM이 전달되지 않았습니다. state에 'llm' 키가 있어야 합니다.")
 
     try:
         dict_size = len(context.get_dictionary())
@@ -242,7 +249,10 @@ async def translate_text(state):
     placeholder_idx = 1
     dictionary_entries = []
 
-    for key, item in translation_dictionary.items():
+    # 동시성 문제 방지를 위해 사전의 키-값 쌍을 미리 복사
+    dict_items = list(translation_dictionary.items())
+
+    for key, item in dict_items:
         # 사전 항목 추가
         if len(key) > 3:
             if key.lower() in text_replaced_with_korean_dictionary.lower():
@@ -259,7 +269,12 @@ async def translate_text(state):
                 temp_placeholders[temp_token] = item
                 placeholder_idx += 1
 
-    dictionary_items = set(state.get("dictionary", []) + dictionary_entries)
+    # state에서 가져온 dictionary를 복사하여 동시성 문제 방지
+    orig_dictionary = state.get("dictionary", [])
+    if orig_dictionary:
+        orig_dictionary = list(orig_dictionary)  # 복사
+
+    dictionary_items = set(orig_dictionary + dictionary_entries)
     if len(dictionary_items) > 0:
         dictionary_text = "\n".join(dictionary_items)
     else:
@@ -351,15 +366,20 @@ async def translate_text(state):
                 hasattr(result, "new_dictionary_entries")
                 and result.new_dictionary_entries
             ):
+                # 새 항목들을 임시 저장
+                new_entries_to_add = []
+
                 for entry in result.new_dictionary_entries:
                     if hasattr(entry, "en") and hasattr(entry, "ko"):
                         adding = False
+                        # 동시성 문제 방지를 위해 현재 상태 확인
                         if entry.en.lower() not in translation_dictionary_lowercase:
                             adding = True
                         else:
-                            target = translation_dictionary[
-                                translation_dictionary_lowercase[entry.en.lower()]
+                            target_key = translation_dictionary_lowercase[
+                                entry.en.lower()
                             ]
+                            target = translation_dictionary[target_key]
                             if isinstance(target, str):
                                 if not re.match(r"[가-힣]+", target):
                                     adding = True
@@ -370,12 +390,15 @@ async def translate_text(state):
                                         break
 
                         if adding:
-                            await context.async_add_to_dictionary(
-                                entry.en.lower(), entry.ko.lower()
+                            new_entries_to_add.append(
+                                (entry.en.lower(), entry.ko.lower())
                             )
-                            logger.info(
-                                f"사전에 추가됨: {entry.en.lower()} -> {entry.ko.lower()}"
-                            )
+
+                # 모든 새 항목을 락을 통해 한번에 추가
+                if new_entries_to_add:
+                    for en_val, ko_val in new_entries_to_add:
+                        await context.async_add_to_dictionary(en_val, ko_val)
+                        logger.info(f"사전에 추가됨: {en_val} -> {ko_val}")
 
             translated_text = result.translated_text
             current_missing_placeholders = []
@@ -493,11 +516,15 @@ async def translate_item(
     key: str,
     value: Any,
     context: TranslationContext,
+    llm: BaseChatModel = None,
     progress_callback=None,
 ) -> Any:
     """한 항목을 비동기적으로 번역합니다."""
     try:
-        translated_value = await registry.aprocess_item(input_path, key, value, context)
+        translated_value = await registry.aprocess_item(
+            input_path, key, value, context, llm
+        )
+
         if progress_callback:
             await progress_callback()
         return key, translated_value
@@ -538,6 +565,9 @@ async def translate_json_file(
     # 컨텍스트 생성 또는 외부에서 전달된 컨텍스트 사용
     if external_context:
         context = external_context
+        # 컨텍스트에 LLM 설정 (기존 LLM이 없는 경우)
+        if context.llm is None and llm is not None:
+            context.llm = llm
         logger.info("외부에서 제공된 컨텍스트를 사용합니다.")
     else:
         # 공유 컨텍스트 생성 (모든 워커가 이 컨텍스트를 공유함)
@@ -577,7 +607,7 @@ async def translate_json_file(
             try:
                 key, value = await queue.get()
                 key, translated_value = await translate_item(
-                    input_path, key, value, context, progress_callback
+                    input_path, key, value, context, llm, progress_callback
                 )
                 translated_data[key] = translated_value
                 queue.task_done()

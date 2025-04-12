@@ -35,7 +35,12 @@ class DictLoader(BaseLoader):
         return value
 
     async def aprocess(
-        self, input_path: str, key: str, value: Any, context: TranslationContext
+        self,
+        input_path: str,
+        key: str,
+        value: Any,
+        context: TranslationContext,
+        llm=None,
     ) -> Any:
         """
         딕셔너리 값을 비동기적으로 처리합니다.
