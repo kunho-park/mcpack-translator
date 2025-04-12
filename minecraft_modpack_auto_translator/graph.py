@@ -218,6 +218,14 @@ async def translate_text(state):
     llm: BaseChatModel = state["llm"]
     context = state["context"]
     context.initialize_dictionaries()
+
+    try:
+        dict_size = len(context.get_dictionary())
+        logger.info(f"초기 사전 크기: {dict_size}개 항목")
+    except Exception as e:
+        logger.warning(f"사전 크기 확인 중 오류: {e}")
+        logger.info("초기 사전 정보를 확인할 수 없습니다.")
+
     translation_dictionary = context.translation_dictionary
     translation_dictionary_lowercase = context.translation_dictionary_lowercase
 
@@ -542,7 +550,13 @@ async def translate_json_file(
 
     # 공유 사전 초기화
     context.initialize_dictionaries()
-    logger.info(f"초기 사전 크기: {len(context.get_dictionary())}개 항목")
+
+    try:
+        dict_size = len(context.get_dictionary())
+        logger.info(f"초기 사전 크기: {dict_size}개 항목")
+    except Exception as e:
+        logger.warning(f"사전 크기 확인 중 오류: {e}")
+        logger.info("초기 사전 정보를 확인할 수 없습니다.")
 
     # 작업 큐 생성
     queue = asyncio.Queue()

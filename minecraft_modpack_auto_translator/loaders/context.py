@@ -95,4 +95,8 @@ class TranslationContext(BaseModel):
     def get_dictionary(self):
         """현재 번역 사전을 반환합니다."""
         self.initialize_dictionaries()
-        return self.translation_dictionary
+        return (
+            self.translation_dictionary
+            if self.translation_dictionary is not None
+            else {}
+        )
