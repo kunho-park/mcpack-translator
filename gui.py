@@ -19,7 +19,6 @@ if sys.platform.startswith("win"):
     import asyncio
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 import minecraft_modpack_auto_translator
 from minecraft_modpack_auto_translator import create_resourcepack
 from minecraft_modpack_auto_translator.config import (
@@ -28,6 +27,13 @@ from minecraft_modpack_auto_translator.config import (
     DIR_FILTER_WHITELIST,
     OFFICIAL_EN_LANG_FILE,
     OFFICIAL_KO_LANG_FILE,
+)
+from minecraft_modpack_auto_translator.graph import (
+    create_translation_graph,
+    registry,
+)
+from minecraft_modpack_auto_translator.loaders.context import (
+    TranslationContext,
 )
 from minecraft_modpack_auto_translator.translator import get_translator
 
@@ -780,36 +786,6 @@ def main():
                             elif log["level"] == "success":
                                 st.success(f"[{log['time']}] {log['message']}")
 
-                # 모든 번역 작업에서 공유할 TranslationContext 생성
-                from minecraft_modpack_auto_translator.graph import (
-                    create_translation_graph,
-                    registry,
-                )
-                from minecraft_modpack_auto_translator.loaders.context import (
-                    TranslationContext,
-                )
-
-                # 공유 컨텍스트 생성
-                shared_context = TranslationContext(
-                    translation_graph=create_translation_graph(),
-                    custom_dictionary_dict=translation_dictionary,
-                    registry=registry,
-                )
-                shared_context.initialize_dictionaries()
-
-                try:
-                    dict_size = len(shared_context.get_dictionary())
-                    add_log(
-                        f"공유 번역 컨텍스트 생성 완료: {dict_size}개 사전 항목",
-                        "success",
-                    )
-                except Exception as e:
-                    add_log(
-                        f"공유 컨텍스트 생성은 완료됐으나 사전 정보 확인 중 오류: {e}",
-                        "warning",
-                    )
-                    add_log("번역은 정상적으로 진행됩니다.", "info")
-
             # 작업자별 진행 상황 컨테이너
             worker_progress_bars = {}
             worker_progress_texts = {}
@@ -938,6 +914,27 @@ def main():
                     st.info(
                         f"기존 번역에서 {total_files}개 파일을 분석하여 {total_entries}개 항목을 사전에 추가했습니다."
                     )
+
+            # 공유 컨텍스트 생성
+            shared_context = TranslationContext(
+                translation_graph=create_translation_graph(),
+                custom_dictionary_dict=translation_dictionary,
+                registry=registry,
+            )
+            shared_context.initialize_dictionaries()
+
+            try:
+                dict_size = len(shared_context.get_dictionary())
+                add_log(
+                    f"공유 번역 컨텍스트 생성 완료: {dict_size}개 사전 항목",
+                    "success",
+                )
+            except Exception as e:
+                add_log(
+                    f"공유 컨텍스트 생성은 완료됐으나 사전 정보 확인 중 오류: {e}",
+                    "warning",
+                )
+                add_log("번역은 정상적으로 진행됩니다.", "info")
 
             status_text.text(
                 f"번역을 시작합니다... ({len(translation_dictionary)}개 사전 항목 사용)"
