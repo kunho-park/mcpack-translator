@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import traceback
 import uuid
 import zipfile
@@ -12,6 +13,12 @@ from glob import glob
 
 import streamlit as st
 from langchain_core.rate_limiters import InMemoryRateLimiter
+
+# Windows 환경에서 asyncio 이벤트 루프 정책 설정
+if sys.platform.startswith("win"):
+    import asyncio
+
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import minecraft_modpack_auto_translator
 from minecraft_modpack_auto_translator import create_resourcepack
