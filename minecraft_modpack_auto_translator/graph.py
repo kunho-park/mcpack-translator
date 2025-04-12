@@ -511,6 +511,7 @@ async def translate_json_file(
     llm=None,
     max_workers: int = 5,
     progress_callback=None,
+    external_context=None,
 ):
     """JSON 파일을 비동기적으로 번역합니다."""
     # 입력 JSON 파일 로드
@@ -526,13 +527,18 @@ async def translate_json_file(
     # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
 
-    # 공유 컨텍스트 생성 (모든 워커가 이 컨텍스트를 공유함)
-    context = TranslationContext(
-        translation_graph=translation_graph,
-        custom_dictionary_dict=custom_dictionary_dict,
-        llm=llm,
-        registry=registry,
-    )
+    # 컨텍스트 생성 또는 외부에서 전달된 컨텍스트 사용
+    if external_context:
+        context = external_context
+        logger.info("외부에서 제공된 컨텍스트를 사용합니다.")
+    else:
+        # 공유 컨텍스트 생성 (모든 워커가 이 컨텍스트를 공유함)
+        context = TranslationContext(
+            translation_graph=translation_graph,
+            custom_dictionary_dict=custom_dictionary_dict,
+            llm=llm,
+            registry=registry,
+        )
 
     # 공유 사전 초기화
     context.initialize_dictionaries()

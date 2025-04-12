@@ -759,6 +759,24 @@ def main():
                 log_container = st.expander("번역 로그", expanded=True)
                 logs = []  # 로그 메시지를 저장할 리스트
 
+                # 모든 번역 작업에서 공유할 TranslationContext 생성
+                from minecraft_modpack_auto_translator.graph import (
+                    create_translation_graph,
+                    registry,
+                )
+                from minecraft_modpack_auto_translator.loaders.context import (
+                    TranslationContext,
+                )
+
+                # 공유 컨텍스트 생성
+                shared_context = TranslationContext(
+                    translation_graph=create_translation_graph(),
+                    custom_dictionary_dict=translation_dictionary,
+                    llm=None,  # 각 번역 작업에서 자신의 API 키로 설정
+                    registry=registry,
+                )
+                shared_context.initialize_dictionaries()
+
                 # 로그 출력 함수
                 def add_log(message, level="info"):
                     logs.append(
@@ -1179,6 +1197,7 @@ def main():
                                 ),
                                 max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
                                 progress_callback=progress_callback,
+                                external_context=shared_context,  # 공유 컨텍스트 사용
                             )
 
                             # 모든 항목 처리 완료
@@ -1453,12 +1472,16 @@ def main():
                 output_path, "total_dictionary", f"{uuid_str}_final.json"
             )
             os.makedirs(os.path.dirname(final_dict_path), exist_ok=True)
+            # 공유 컨텍스트의 사전 저장
+            shared_dict = shared_context.get_dictionary()
             with open(final_dict_path, "w", encoding="utf-8") as f:
-                json.dump(translation_dictionary, f, ensure_ascii=False, indent=4)
+                json.dump(shared_dict, f, ensure_ascii=False, indent=4)
+
+            add_log(f"최종 공유 사전 크기: {len(shared_dict)}개 항목", "success")
 
             # 결과 표시
             st.success(
-                f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일은 건너뛰고 번역 되었습니다. 번역 사전은 {len(translation_dictionary)}개 항목으로 구성되었습니다."
+                f"번역이 완료되었습니다! 총 {len(translated_files)}개의 파일은 건너뛰고 번역 되었습니다. 번역 사전은 {len(shared_dict)}개 항목으로 구성되었습니다."
             )
 
             # 오류 발생 파일 표시
