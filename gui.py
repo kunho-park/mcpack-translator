@@ -647,7 +647,7 @@ def main():
     max_workers = st.sidebar.number_input(
         "동시 작업 수",
         min_value=1,
-        max_value=20,
+        max_value=100,
         value=5,
         step=1,
         help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다.",
