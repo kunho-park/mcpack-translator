@@ -1168,9 +1168,9 @@ def main():
                             nonlocal processed_items
                             items_count = len(en_data)
                             if items_count > 0:
-                                # 처리된 항목 수 증가 (추정치)
+                                # 처리된 항목 수 증가
                                 processed_items = min(
-                                    processed_items + max(1, int(items_count * 0.05)),
+                                    processed_items + 1,
                                     items_count - 1,
                                 )
 
