@@ -1152,14 +1152,16 @@ def main():
                     else 0
                 )
                 speed_info = (
-                    f"평균 속도: {avg_speed:.2f} 항목/초" if avg_speed > 0 else ""
+                    f"평균 속도: {avg_speed:.2f} 항목/초"
+                    if avg_speed > 0
+                    else "평균 속도: 계산중.."
                 )
 
                 # 전체 진행 상황 업데이트
                 percent_complete = int((processed_files / total_files) * 100)
                 status_text.markdown(
                     f"번역 중... **{processed_files}/{total_files}** 파일 완료 ({percent_complete}%) - "
-                    f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명\n"
+                    f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명  \n"
                     f"⏱️ {time_info} | {speed_info} | 업데이트 간격: {update_interval}초"
                 )
 

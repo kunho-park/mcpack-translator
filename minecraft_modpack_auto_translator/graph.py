@@ -326,17 +326,17 @@ async def translate_text(state):
                     return cleaned_text
 
             class DictionaryEntry(BaseModel):
-                en: str = Field(..., description="English word")
-                ko: str = Field(..., description="Translated word")
+                en: str = Field(..., description="영어 단어")
+                ko: str = Field(..., description="한글 단어")
 
             class TranslationResponse(BaseModel):
                 translated_text: str = Field(
                     ...,
-                    description="Korean translated text (do not miss placeholders)",
+                    description="한글 번역 텍스트 (플레이스홀더 누락 금지)",
                 )
                 new_dictionary_entries: List[DictionaryEntry] = Field(
                     default_factory=list,
-                    description="New dictionary entries to add to the dictionary",
+                    description="사전에 추가할 새로운 단어들",
                 )
 
             parser = PydanticOutputParser(pydantic_object=TranslationResponse)
