@@ -650,10 +650,10 @@ async def translate_json_file(
 
                 # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
                 current_dict_size = len(context.get_dictionary())
-                if current_dict_size - last_save_size >= 10:
+                if current_dict_size - last_save_size >= 100:
                     async with dict_save_lock:
                         # 다른 워커가 이미 저장했는지 다시 확인
-                        if current_dict_size - last_save_size >= 10:
+                        if current_dict_size - last_save_size >= 100:
                             try:
                                 # 중간 결과 파일 저장
                                 with open(output_path, "w", encoding="utf-8") as f:
