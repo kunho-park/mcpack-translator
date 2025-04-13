@@ -29,6 +29,7 @@ from .config import (
     RULES_FOR_PLACEHOLDER,
     TEMPLATE_TRANSLATE_TEXT,
 )
+from .delay_manager import DelayManager
 from .loaders import (
     DefaultLoader,
     DictLoader,
@@ -518,12 +519,21 @@ async def translate_item(
     context: TranslationContext,
     llm: BaseChatModel = None,
     progress_callback=None,
+    delay_manager: DelayManager = None,
 ) -> Any:
     """한 항목을 비동기적으로 번역합니다."""
     try:
+        # API 요청 전 딜레이 적용
+        if delay_manager:
+            await delay_manager.wait_before_request()
+
         translated_value = await registry.aprocess_item(
             input_path, key, value, context, llm
         )
+
+        # API 요청 후 딜레이 적용
+        if delay_manager:
+            await delay_manager.wait_after_request()
 
         if progress_callback:
             await progress_callback()
@@ -547,6 +557,7 @@ async def translate_json_file(
     max_workers: int = 5,
     progress_callback=None,
     external_context=None,
+    delay_manager: DelayManager = None,
 ):
     """
     JSON 파일을 비동기적으로 번역합니다.
@@ -559,12 +570,18 @@ async def translate_json_file(
         max_workers: 동시 작업자 수
         progress_callback: 진행 상황 콜백 함수
         external_context: 외부에서 제공하는 TranslationContext 객체
+        delay_manager: API 요청 사이 딜레이를 관리하는 객체
     """
     # llm이 제공되지 않은 경우 오류 발생
     if llm is None:
         raise ValueError(
             "llm은 필수 인자입니다. 번역을 위해 언어 모델을 제공해야 합니다."
         )
+
+    # 딜레이 관리자가 없으면 기본값으로 생성
+    if delay_manager is None:
+        delay_manager = DelayManager(delay=0)
+        logger.info("딜레이 관리자가 제공되지 않아 기본 딜레이 0초로 설정합니다.")
 
     # 입력 JSON 파일 로드
     with open(input_path, "r", encoding="utf-8") as f:
@@ -620,7 +637,13 @@ async def translate_json_file(
             try:
                 key, value = await queue.get()
                 key, translated_value = await translate_item(
-                    input_path, key, value, context, llm, progress_callback
+                    input_path,
+                    key,
+                    value,
+                    context,
+                    llm,
+                    progress_callback,
+                    delay_manager,
                 )
                 translated_data[key] = translated_value
                 queue.task_done()

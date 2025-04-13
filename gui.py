@@ -29,6 +29,7 @@ from minecraft_modpack_auto_translator.config import (
     OFFICIAL_EN_LANG_FILE,
     OFFICIAL_KO_LANG_FILE,
 )
+from minecraft_modpack_auto_translator.delay_manager import DelayManager
 from minecraft_modpack_auto_translator.graph import (
     create_translation_graph,
     registry,
@@ -570,7 +571,7 @@ def main():
                     st.sidebar.success(
                         f"{len(api_keys_data[model_provider])}개의 API 키를 가져왔습니다."
                     )
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.sidebar.warning(
                         f"JSON 파일에 {model_provider} API 키가 없습니다."
@@ -641,6 +642,19 @@ def main():
         step=1,
         disabled=not use_rate_limiter,
         help="분당 최대 API 요청 횟수를 설정합니다. 값이 낮을수록 API 할당량을 절약할 수 있습니다.",
+    )
+
+    st.sidebar.subheader("요청 딜레이 설정")
+    use_request_delay = st.sidebar.checkbox("요청 사이 딜레이 사용", value=False)
+    request_delay = st.sidebar.number_input(
+        "요청 간 딜레이(초)",
+        min_value=0.0,
+        max_value=10.0,
+        value=0.5,
+        step=0.1,
+        format="%.1f",
+        disabled=not use_request_delay,
+        help="각 API 요청 사이의 최소 대기 시간을 설정합니다. 값이 높을수록 API 오류가 감소할 수 있지만 번역 속도가 느려집니다.",
     )
 
     # 병렬 처리 설정
@@ -839,7 +853,10 @@ def main():
                     )
                     status_text.text(f"속도 제한: {rpm} RPM ({rps:.2f} RPS)")
                     add_log(f"속도 제한 설정: {rpm} RPM ({rps:.2f} RPS)")
-
+                if use_request_delay:
+                    delay_manager = DelayManager(delay=request_delay)
+                else:
+                    delay_manager = DelayManager(delay=0)
                 # 현재 API 키 가져오기
                 st.session_state.api_key_index = (
                     st.session_state.api_key_index + 1
@@ -1323,6 +1340,7 @@ def main():
                                 max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
                                 progress_callback=progress_callback,
                                 external_context=shared_context,  # 공유 컨텍스트 사용
+                                delay_manager=delay_manager,
                             )
 
                             # 모든 항목 처리 완료
