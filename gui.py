@@ -653,6 +653,17 @@ def main():
         help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다.",
     )
 
+    # UI 업데이트 설정
+    st.sidebar.subheader("UI 업데이트 설정")
+    update_interval = st.sidebar.slider(
+        "업데이트 간격(초)",
+        min_value=1.0,
+        max_value=10.0,
+        value=3.0,
+        step=0.5,
+        help="UI가 업데이트되는 간격을 설정합니다. 값이 낮을수록 실시간으로 정보가 갱신되지만 성능에 영향을 줄 수 있습니다.",
+    )
+
     # 커스텀 사전 업로드
     st.sidebar.header("커스텀 사전")
     custom_dict_file = st.sidebar.file_uploader(
@@ -991,6 +1002,12 @@ def main():
                 for i in range(max_workers)
             }
 
+            # 번역 시작 시간 기록
+            start_time = asyncio.get_event_loop().time()
+            last_update_time = {}  # 각 워커별 마지막 업데이트 시간
+            processing_speeds = []  # 최근 처리 속도 기록 (항목/초)
+            max_speed_samples = 10  # 속도 계산에 사용할 최대 샘플 수
+
             # 진행 상황 업데이트 콜백 함수
             async def update_progress(
                 worker_id,
@@ -1000,6 +1017,26 @@ def main():
                 total_items=None,
                 processed_items=None,
             ):
+                current_time = asyncio.get_event_loop().time()
+
+                # 마지막 업데이트 시간 확인
+                if worker_id in last_update_time:
+                    # 업데이트 간격이 충분하지 않으면 업데이트 건너뛰기 (파일 완료 시는 제외)
+                    if (
+                        not done
+                        and current_time - last_update_time[worker_id] < update_interval
+                    ):
+                        return
+
+                # 현재 시간을 마지막 업데이트 시간으로 기록
+                last_update_time[worker_id] = current_time
+
+                # 경과 시간 계산
+                elapsed_time = current_time - start_time
+                hours, remainder = divmod(elapsed_time, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                elapsed_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+
                 if file_path:
                     worker_statuses[worker_id]["file"] = file_path
 
@@ -1018,6 +1055,51 @@ def main():
                 else:
                     worker_statuses[worker_id]["active"] = True
 
+                # 예상 완료 시간 계산 (전체의 1% 이상 처리된 경우에만)
+                if (
+                    processed_files > 0
+                    and processed_files < total_files
+                    and elapsed_time > 10
+                ):
+                    completion_percentage = processed_files / total_files
+                    if completion_percentage > 0.01:
+                        estimated_total_time = elapsed_time / completion_percentage
+                        remaining_time = estimated_total_time - elapsed_time
+
+                        # 남은 시간 형식화
+                        r_hours, r_remainder = divmod(remaining_time, 3600)
+                        r_minutes, r_seconds = divmod(r_remainder, 60)
+                        remaining_str = (
+                            f"{int(r_hours):02}:{int(r_minutes):02}:{int(r_seconds):02}"
+                        )
+
+                        # 예상 완료 시간 계산
+                        import datetime
+
+                        completion_time = datetime.datetime.now() + datetime.timedelta(
+                            seconds=remaining_time
+                        )
+
+                        # 오늘이면 시간만, 내일 이후면 날짜와 시간 표시
+                        today = datetime.datetime.now().date()
+                        if completion_time.date() == today:
+                            completion_str = completion_time.strftime("%H:%M:%S")
+                            completion_display = f"오늘 {completion_str}"
+                        elif completion_time.date() == today + datetime.timedelta(
+                            days=1
+                        ):
+                            completion_str = completion_time.strftime("%H:%M:%S")
+                            completion_display = f"내일 {completion_str}"
+                        else:
+                            completion_str = completion_time.strftime("%m/%d %H:%M:%S")
+                            completion_display = completion_str
+
+                        time_info = f"경과: {elapsed_str} | 남음: {remaining_str} | 완료 예상: {completion_display}"
+                    else:
+                        time_info = f"경과: {elapsed_str}"
+                else:
+                    time_info = f"경과: {elapsed_str}"
+
                 # 작업자 상태 업데이트
                 status_prefix = (
                     "🟢 Active"
@@ -1026,6 +1108,26 @@ def main():
                 )
 
                 if total_items and processed_items is not None:
+                    # 처리 속도 계산 (항목/초)
+                    if done and "start_processing_time" in worker_statuses[worker_id]:
+                        processing_time = (
+                            current_time
+                            - worker_statuses[worker_id]["start_processing_time"]
+                        )
+                        if processing_time > 0:
+                            items_per_second = total_items / processing_time
+                            processing_speeds.append(items_per_second)
+                            # 최근 n개 샘플만 유지
+                            if len(processing_speeds) > max_speed_samples:
+                                processing_speeds.pop(0)
+                    elif (
+                        not done
+                        and "start_processing_time" not in worker_statuses[worker_id]
+                    ):
+                        worker_statuses[worker_id]["start_processing_time"] = (
+                            current_time
+                        )
+
                     item_progress = f"{processed_items}/{total_items} 항목"
                     worker_status_texts[worker_id].markdown(
                         f"{status_prefix} - **{worker_statuses[worker_id]['file']}** ({item_progress})"
@@ -1042,11 +1144,22 @@ def main():
                     f"**{worker_statuses[worker_id]['progress']}%**"
                 )
 
+                # 평균 처리 속도 계산
+                avg_speed = (
+                    sum(processing_speeds) / len(processing_speeds)
+                    if processing_speeds
+                    else 0
+                )
+                speed_info = (
+                    f"평균 속도: {avg_speed:.2f} 항목/초" if avg_speed > 0 else ""
+                )
+
                 # 전체 진행 상황 업데이트
                 percent_complete = int((processed_files / total_files) * 100)
                 status_text.markdown(
                     f"번역 중... **{processed_files}/{total_files}** 파일 완료 ({percent_complete}%) - "
-                    f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명"
+                    f"활성 작업자: {sum(1 for s in worker_statuses.values() if s['active'])}명\n"
+                    f"⏱️ {time_info} | {speed_info} | 업데이트 간격: {update_interval}초"
                 )
 
             # 사전 정렬 및 필터링 함수
