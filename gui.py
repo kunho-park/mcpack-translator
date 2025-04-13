@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import sys
+import time
 import traceback
 import uuid
 import zipfile
@@ -1003,7 +1004,7 @@ def main():
             }
 
             # 번역 시작 시간 기록
-            start_time = asyncio.get_event_loop().time()
+            start_time = time.time()
             last_update_time = {}  # 각 워커별 마지막 업데이트 시간
             processing_speeds = []  # 최근 처리 속도 기록 (항목/초)
             max_speed_samples = 10  # 속도 계산에 사용할 최대 샘플 수
@@ -1017,7 +1018,7 @@ def main():
                 total_items=None,
                 processed_items=None,
             ):
-                current_time = asyncio.get_event_loop().time()
+                current_time = time.time()
 
                 # 마지막 업데이트 시간 확인
                 if worker_id in last_update_time:
