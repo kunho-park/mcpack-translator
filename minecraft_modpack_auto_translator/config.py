@@ -81,8 +81,9 @@ DICTIONARY_BLACKLIST = [
     "no",
 ]
 
-TEMPLATE_TRANSLATE_TEXT = """당신은 마인크래프트 번역 전문가입니다. 영어 텍스트를 한국어로 번역해야 합니다.
+TEMPLATE_TRANSLATE_TEXT = """당신은 번역 전문가입니다. 영어 텍스트를 한국어로 번역해야 합니다.
 모든 경우에 아래 규칙을 엄격히 따라야 합니다.
+규칙을 신중히 읽고 지침에 따르세요.
 
 {translation_rules}
 

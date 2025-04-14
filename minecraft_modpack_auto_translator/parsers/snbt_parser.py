@@ -32,7 +32,7 @@ class SNBTParser(BaseParser):
             # 마크 컬러코드 형식(&0~&9, &a~&f, &k~&o, &r)은 치환하지 않고 유지
             # 컬러코드가 아닌 &만 이스케이프 처리
             pattern = r"&(?![0-9a-fk-or])"
-            return re.sub(pattern, r"\\&", obj)
+            return re.sub(pattern, r"\\&", re.sub(r"\n", r"\\n", obj))
         elif isinstance(obj, dict):
             return {k: SNBTParser.replace_ampersand(v) for k, v in obj.items()}
         elif isinstance(obj, list):
