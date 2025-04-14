@@ -274,15 +274,29 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
             return value
+        try:
+            value_dict = json.loads(value)
+        except json.JSONDecodeError:
+            value_dict = value
 
-        value_dict = json.loads(value)
-        state = await translation_graph.ainvoke(
-            {
-                "text": value_dict["text"],
-                "custom_dictionary_dict": custom_dictionary_dict,
-                "llm": llm,
-                "context": context,
-            }
-        )
-        value_dict["text"] = state["restored_text"]
-        return json.dumps(value_dict)
+        if isinstance(value_dict, dict):
+            state = await translation_graph.ainvoke(
+                {
+                    "text": value_dict["text"],
+                    "custom_dictionary_dict": custom_dictionary_dict,
+                    "llm": llm,
+                    "context": context,
+                }
+            )
+            value_dict["text"] = state["restored_text"]
+            return json.dumps(value_dict)
+        else:
+            state = await translation_graph.ainvoke(
+                {
+                    "text": value_dict,
+                    "custom_dictionary_dict": custom_dictionary_dict,
+                    "llm": llm,
+                    "context": context,
+                }
+            )
+            return state["restored_text"]
