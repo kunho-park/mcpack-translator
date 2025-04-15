@@ -625,10 +625,10 @@ def main():
     temperature = st.sidebar.slider(
         "Temperature",
         min_value=0.0,
-        max_value=1.0,
+        max_value=2.0,
         value=0.0,
         step=0.05,
-        help="값이 낮을수록 더 창의성이 낮은 응답이, 높을수록 더 창의성이 높은 응답이 생성됩니다.",
+        help="값이 낮을수록 더 창의성이 낮은 응답이, 높을수록 더 창의성이 높은 응답이 생성됩니다. 각 모델별로 제공사(Google, OpenAI)가 추천하는 값이 다름으로 공식 문서를 참고하여 설정하세요.",
     )
 
     # API 속도 제한 설정
@@ -660,12 +660,21 @@ def main():
     # 병렬 처리 설정
     st.sidebar.subheader("병렬 처리 설정")
     max_workers = st.sidebar.number_input(
-        "동시 작업 수",
+        "동시 작업자 수",
         min_value=1,
         max_value=100,
         value=5,
         step=1,
-        help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다.",
+        help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다. 이 숫자는 높을수록 몇개의 파일을 동시에 열고 작업할지를 설정 합니다.",
+    )
+
+    file_split_number = st.sidebar.number_input(
+        "파일 분할 작업자 수",
+        min_value=1,
+        max_value=100,
+        value=1,
+        step=1,
+        help="파일 분할 작업자 수를 설정합니다. 값이 높을수록 한개의 파일을 n개로 분할하여 작업하여 속도가 빨라집니다. 하지만 1보다 크게 설정한다면 사전을 동시에 작성하면서 같은 용어를 사용하지 않는 경우가 발생할 수 있습니다.",
     )
 
     # UI 업데이트 설정
@@ -1337,7 +1346,7 @@ def main():
                                     temperature=temperature,
                                     rate_limiter=rate_limiter,
                                 ),
-                                max_workers=1,  # 단일 파일 내에서는 병렬 처리 안함
+                                max_workers=file_split_number,  # 단일 파일 내에서는 병렬 처리 안함
                                 progress_callback=progress_callback,
                                 external_context=shared_context,  # 공유 컨텍스트 사용
                                 delay_manager=delay_manager,
