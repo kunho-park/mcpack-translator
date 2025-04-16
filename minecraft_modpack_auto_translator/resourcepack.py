@@ -148,6 +148,9 @@ def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(resourcepack_dir):
             for file in files:
+                # .tmp 파일 건너뛰기
+                if file.endswith(".tmp"):
+                    continue
                 file_path = os.path.join(root, file)
                 # 리소스팩 디렉토리를 기준으로 상대 경로 생성
                 arcname = os.path.relpath(file_path, resourcepack_dir)

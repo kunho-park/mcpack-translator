@@ -1433,13 +1433,13 @@ def main():
                                     with open(output_file, "w", encoding="utf-8") as f:
                                         f.write(content)
 
-                                    # 임시 파일 삭제
-                                    try:
-                                        os.remove(temp_output_path)
-                                    except OSError:
-                                        logger.warning(
-                                            f"임시 파일을 삭제할 수 없습니다: {temp_output_path}"
-                                        )
+                                    # # 임시 파일 삭제
+                                    # try:
+                                    #     os.remove(temp_output_path)
+                                    # except OSError:
+                                    #     logger.warning(
+                                    #         f"임시 파일을 삭제할 수 없습니다: {temp_output_path}"
+                                    #     )
 
                                     # 작업 완료 표시
                                     await update_progress(
