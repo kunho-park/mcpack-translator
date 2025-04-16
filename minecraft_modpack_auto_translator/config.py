@@ -20,7 +20,7 @@ C_PLACEHOLDER_PATTERN = r"%(?:[sd]|1\$s)"
 ITEM_PLACEHOLDER_PATTERN = r"\$\([^)]*\)"
 JSON_PLACEHOLDER_PATTERN = r"\{(?:[^{}]|(?R))*\}"
 HTML_TAG_PATTERN = r"<[^>]*>"
-MINECRAFT_ITEM_CODE_PATTERN = r"[a-z_0-9]+[:.][0-9a-z_./]+"
+MINECRAFT_ITEM_CODE_PATTERN = r"[a-z_0-9]+[:.][0-9a-z_./]*[a-z]"
 
 ADDED_DICTIONARY_ENTRIES = []
 
@@ -141,7 +141,7 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
     예시: "Thermal Expansion" -> "써멀 익스팬션"
 3. 제공된 용어집(dictionary)은 번역 일관성을 위한 참고 자료이며, 내용을 그대로 복사해서는 안 됩니다.
 4. 용어집에 없는 단어는 문맥에 맞게 자연스러운 한국어로 번역하세요.
-5. 용어집의 단어를 사용할 때는 한국어 문법에 맞게 자연스럽게 활용하세요. 용어집의 번역이 항상 옳지는 않으므로, 문맥에 따라 적절히 수정해야 합니다.
+5. 용어집의 단어를 사용할 때는 한국어 문법에 맞게 자연스럽게 활용하세요. 용어집의 번역이 항상 옳지는 않으므로, 문맥에 따라 적절히 수정해야 합니다.ㅇ
 6. 용어집에 잘못된 번역이 있다면 수정하여 사용하세요.
 7. 가능한 한 모든 영어를 한국어로 번역하고, 영어 표기를 그대로 남기는 것을 최소화하세요.
 </translation_rules>"""
