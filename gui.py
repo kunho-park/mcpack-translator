@@ -765,21 +765,30 @@ def main():
 
     # 공식 마인크래프트 번역 파일에서 사전 구축
     try:
-        # 영어-한국어 매핑 생성
-        for key, en_value in OFFICIAL_EN_LANG_FILE.items():
-            if key in OFFICIAL_KO_LANG_FILE:
-                ko_value = OFFICIAL_KO_LANG_FILE[key]
-                if en_value and ko_value:  # 빈 값이 아닌 경우에만 추가
-                    add_to_dictionary(
-                        en_value,
-                        ko_value,
-                        translation_dictionary,
-                        translation_dictionary_lowercase,
-                    )
+        if source_lang_code == "en_us":  # 원본 언어가 영어일 때만 공식 사전 구축
+            # 영어-한국어 매핑 생성
+            for key, en_value in OFFICIAL_EN_LANG_FILE.items():
+                if key in OFFICIAL_KO_LANG_FILE:
+                    ko_value = OFFICIAL_KO_LANG_FILE[key]
+                    if en_value and ko_value:  # 빈 값이 아닌 경우에만 추가
+                        add_to_dictionary(
+                            en_value,
+                            ko_value,
+                            translation_dictionary,
+                            translation_dictionary_lowercase,
+                        )
 
-        st.sidebar.success(
-            f"공식 마인크래프트 번역 사전 로드 완료: {len(translation_dictionary)}개 항목"
-        )
+            st.sidebar.success(
+                f"공식 마인크래프트 번역 사전 로드 완료: {len(translation_dictionary)}개 항목"
+            )
+        else:
+            st.sidebar.warning(
+                f"원본 언어 '{source_lang_code}'에 대한 공식 번역 파일이 없어 공식 사전 구축을 건너뛰니다."
+            )
+            logger.warning(
+                f"원본 언어 '{source_lang_code}'에 대한 공식 번역 파일이 없어 공식 사전 구축을 건너뛰니다."
+            )
+
     except Exception as e:
         st.sidebar.warning(f"공식 번역 파일 로드 오류: {str(e)}")
         logger.warning(f"공식 번역 파일 로드 오류: {str(e)}")

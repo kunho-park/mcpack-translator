@@ -2,6 +2,7 @@ import asyncio
 import copy
 import json
 import logging
+import random
 import re
 import traceback
 from typing import Any, Dict, List
@@ -621,8 +622,10 @@ async def translate_json_file(
     # 작업 큐 생성
     queue = asyncio.Queue()
 
-    # 큐에 작업 추가
-    for key, value in data.items():
+    # 큐에 작업 추가 (랜덤 순서로)
+    items = list(data.items())
+    random.shuffle(items)  # 리스트 순서 섞기
+    for key, value in items:
         await queue.put((key, value))
 
     # 공유 사전 상태 저장용 락
