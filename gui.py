@@ -132,27 +132,33 @@ def add_to_dictionary(
 
 
 def build_dictionary_from_files(
-    en_us_files, modpack_path, translation_dictionary, translation_dictionary_lowercase
+    en_us_files,
+    modpack_path,
+    translation_dictionary,
+    translation_dictionary_lowercase,
+    source_lang_code,
 ):
-    """영어 파일과 해당하는 한국어 파일에서 번역 사전을 구축합니다."""
+    """주어진 원본 언어 파일과 해당하는 목표 언어 파일에서 번역 사전을 구축합니다."""
 
     file_count = 0
     entries_added = 0
 
     for en_file in en_us_files:
         try:
-            # 한국어 파일 경로 추정
+            # 목표 언어 파일 경로 추정
             rel_path = en_file.replace(modpack_path, "").lstrip("/\\")
-            ko_file = os.path.join(
+            target_lang_file = os.path.join(
                 modpack_path,
-                rel_path.replace("en_us", LANG_CODE).replace("en_US", LANG_CODE),
+                rel_path.replace(source_lang_code, LANG_CODE, 1),  # 첫 번째 발생만 교체
             )
 
-            # 한국어 파일이 존재하는 경우
-            if os.path.exists(ko_file):
+            # 목표 언어 파일이 존재하는 경우
+            if os.path.exists(target_lang_file):
                 # 파일 내용 로드
                 en_data = extract_lang_content(en_file)
-                ko_data = extract_lang_content(ko_file)
+                ko_data = extract_lang_content(
+                    target_lang_file
+                )  # 변수명은 ko_data 유지
 
                 if not isinstance(en_data, dict) or not isinstance(ko_data, dict):
                     continue
@@ -207,7 +213,10 @@ def build_dictionary_from_files(
 
 
 def build_dictionary_from_jar(
-    jar_files, translation_dictionary, translation_dictionary_lowercase
+    jar_files,
+    translation_dictionary,
+    translation_dictionary_lowercase,
+    source_lang_code,
 ):
     """JAR 파일 내부의 언어 파일에서 번역 사전을 구축합니다."""
 
@@ -218,29 +227,33 @@ def build_dictionary_from_jar(
     for jar_path in jar_files:
         try:
             with zipfile.ZipFile(jar_path, "r") as jar:
-                # 영어 파일 찾기
-                en_lang_files = [
+                # 원본 언어 파일 찾기
+                source_lang_files = [
                     f
                     for f in jar.namelist()
                     if os.path.splitext(f)[1] in supported_extensions
-                    and ("en_us" in f.lower() or "en_US" in f.lower())
+                    and (
+                        source_lang_code.lower() in f.lower()
+                    )  # 사용자가 입력한 언어 코드 사용
                 ]
 
-                for en_file in en_lang_files:
-                    # 한국어 파일 경로 추정
-                    ko_file = en_file.replace("en_us", LANG_CODE).replace(
-                        "en_US", LANG_CODE
-                    )
+                for en_file in source_lang_files:
+                    # 목표 언어 파일 경로 추정
+                    target_lang_file = en_file.replace(
+                        source_lang_code, LANG_CODE, 1
+                    )  # 첫 번째 발생만 교체
 
                     # 두 파일이 모두 존재하는 경우
-                    if ko_file in jar.namelist():
+                    if target_lang_file in jar.namelist():
                         try:
                             # 파일 내용 로드
                             with jar.open(en_file, "r") as f:
                                 file_bytes = f.read()
                                 en_content = file_bytes.decode("utf-8", errors="ignore")
 
-                            with jar.open(ko_file, "r") as f:
+                            with jar.open(
+                                target_lang_file, "r"
+                            ) as f:  # 변수명은 ko_content 유지
                                 file_bytes = f.read()
                                 ko_content = file_bytes.decode("utf-8", errors="ignore")
 
@@ -351,13 +364,18 @@ def normalize_glob_path(path):
 
 
 def process_modpack_directory(
-    modpack_path, translate_config=True, translate_kubejs=True, translate_mods=True
+    modpack_path,
+    source_lang_code,
+    translate_config=True,
+    translate_kubejs=True,
+    translate_mods=True,
 ):
     """모드팩 디렉토리에서 번역 대상 파일을 찾습니다."""
     supported_extensions = get_supported_extensions()
+    source_lang_code_lower = source_lang_code.lower()  # 소문자로 변환하여 사용
 
     # 번역 대상 파일 검색
-    en_us_files = []
+    source_lang_files = []
 
     # config 폴더 내 파일 검색 (선택한 경우)
     if translate_config:
@@ -371,9 +389,11 @@ def process_modpack_directory(
             if file_ext in supported_extensions and any(
                 whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST
             ):
-                en_us_files.append(f)
-            elif file_ext in supported_extensions and ("en_us" in f or "en_US" in f):
-                en_us_files.append(f)
+                source_lang_files.append(f)
+            elif file_ext in supported_extensions and (
+                source_lang_code_lower in f.lower()
+            ):  # 사용자 입력 언어 코드 확인
+                source_lang_files.append(f)
 
     # kubejs 폴더 내 파일 검색 (선택한 경우)
     if translate_kubejs:
@@ -387,9 +407,11 @@ def process_modpack_directory(
             if file_ext in supported_extensions and any(
                 whitelist_dir in f for whitelist_dir in DIR_FILTER_WHITELIST
             ):
-                en_us_files.append(f)
-            elif file_ext in supported_extensions and ("en_us" in f or "en_US" in f):
-                en_us_files.append(f)
+                source_lang_files.append(f)
+            elif file_ext in supported_extensions and (
+                source_lang_code_lower in f.lower()
+            ):  # 사용자 입력 언어 코드 확인
+                source_lang_files.append(f)
 
     # mods 폴더 내 jar 파일 검색 (선택한 경우)
     mods_jar_files = []
@@ -413,7 +435,9 @@ def process_modpack_directory(
                                 whitelist_dir in f
                                 for whitelist_dir in DIR_FILTER_WHITELIST
                             )
-                            or ("en_us" in f.lower() or "en_US" in f.lower())
+                            or (
+                                source_lang_code_lower in f.lower()
+                            )  # 사용자 입력 언어 코드 확인
                         )
                     ]
 
@@ -430,7 +454,7 @@ def process_modpack_directory(
                         ):
                             shutil.copyfileobj(source, target)
 
-                        en_us_files.append(extract_path)
+                        source_lang_files.append(extract_path)
             except Exception as e:
                 st.error(
                     f"JAR 파일 처리 중 오류: {e}, {jar_path}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
@@ -438,7 +462,7 @@ def process_modpack_directory(
                 error_traceback = traceback.format_exc()
                 logger.error(error_traceback)
 
-    return en_us_files, mods_jar_files
+    return source_lang_files, mods_jar_files
 
 
 def extract_lang_content(file_path):
@@ -697,6 +721,13 @@ def main():
     # 모드팩 선택
     st.header("모드팩 파일 선택")
 
+    # 원본 언어 코드 입력
+    source_lang_code = st.text_input(
+        "원본 언어 코드",
+        "en_us",
+        placeholder="번역할 원본 언어 코드를 입력하세요 (예: en_us)",
+    ).lower()  # 입력값을 소문자로 변환
+
     # 폴더 선택 (실제로는 폴더 경로 입력)
     modpack_path = st.text_input(
         "모드팩 폴더 경로",
@@ -894,17 +925,21 @@ def main():
             # 모드팩 디렉토리에서 번역할 파일 찾기
             status_text.text("번역 대상 파일 검색 중...")
             add_log("번역 대상 파일 검색 중...")
-            en_us_files, mods_jar_files = process_modpack_directory(
-                modpack_path, translate_config, translate_kubejs, translate_mods
+            source_lang_files, mods_jar_files = process_modpack_directory(
+                modpack_path,
+                source_lang_code,
+                translate_config,
+                translate_kubejs,
+                translate_mods,
             )
 
-            if len(en_us_files) == 0:
+            if len(source_lang_files) == 0:
                 add_log("번역할 파일을 찾을 수 없습니다.", "warning")
                 st.warning("번역할 파일을 찾을 수 없습니다.")
                 return
 
-            status_text.text(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
-            add_log(f"{len(en_us_files)}개의 언어 파일을 찾았습니다.")
+            status_text.text(f"{len(source_lang_files)}개의 언어 파일을 찾았습니다.")
+            add_log(f"{len(source_lang_files)}개의 언어 파일을 찾았습니다.")
 
             # 기존 번역에서 사전 구축
             if build_dict_from_existing:
@@ -921,6 +956,7 @@ def main():
                     mods_jar_files,
                     translation_dictionary,
                     translation_dictionary_lowercase,
+                    source_lang_code,
                 )
                 add_log(
                     f"JAR 파일 {jar_files_count}개에서 {jar_entries_added}개 항목 추가"
@@ -933,10 +969,11 @@ def main():
                     files_count,
                     entries_added,
                 ) = build_dictionary_from_files(
-                    en_us_files,
+                    source_lang_files,
                     modpack_path,
                     translation_dictionary,
                     translation_dictionary_lowercase,
+                    source_lang_code,
                 )
                 add_log(f"일반 파일 {files_count}개에서 {entries_added}개 항목 추가")
 
@@ -991,7 +1028,7 @@ def main():
             # 파일 타입별 분류
             file_types = {"config": [], "kubejs": [], "mods": []}
 
-            for file_path in en_us_files:
+            for file_path in source_lang_files:
                 # tmp_ 로 시작하는 파일은 건너뛰기
                 if os.path.basename(file_path).startswith("tmp_"):
                     continue
@@ -1020,7 +1057,7 @@ def main():
                 json.dump(file_types, f, ensure_ascii=False, indent=4)
 
             # 카테고리별 번역 진행
-            total_files = len(en_us_files)
+            total_files = len(source_lang_files)
             processed_files = 0
 
             # 작업자별 상태 관리를 위한 딕셔너리
@@ -1248,18 +1285,14 @@ def main():
                         output_path,
                         category,
                         "input",
-                        rel_path.replace("en_us", LANG_CODE).replace(
-                            "en_US", LANG_CODE
-                        ),
+                        rel_path.replace(source_lang_code, LANG_CODE, 1),
                     )
 
                     output_file = os.path.join(
                         output_path,
                         category,
                         "output",
-                        rel_path.replace("en_us", LANG_CODE).replace(
-                            "en_US", LANG_CODE
-                        ),
+                        rel_path.replace(source_lang_code, LANG_CODE, 1),
                     )
 
                     # 이미 번역된 파일은 건너뛰기
