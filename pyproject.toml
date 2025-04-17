@@ -26,6 +26,12 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "regex>=2024.11.6",
     "requests>=2.32.3",
+    "st-annotated-text>=4.0.2",
     "streamlit>=1.44.1",
     "uvicorn>=0.34.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
 ]

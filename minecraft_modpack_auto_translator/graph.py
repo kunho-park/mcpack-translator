@@ -155,6 +155,23 @@ async def retrieve_translations(state):
     text = state["replaced_text"]
     normalized_text = text.lower()
 
+    # replaced_text = text
+
+    # for k, i in translation_dictionary.items():
+    #     if isinstance(i, list):
+    #         for j in i:
+    #             if len(j) < 3:
+    #                 continue
+    #             if j in replaced_text:
+    #                 replaced_text = replaced_text.replace(j, "__REPLACE__")
+    #                 dictionary.append(f"{k} -> {j}")
+    #     else:
+    #         if len(i) < 3:
+    #             continue
+    #         if i in replaced_text:
+    #             replaced_text = replaced_text.replace(i, "__REPLACE__")
+    #             dictionary.append(f"{k} -> {i}")
+
     filtered_english_words = [
         i
         for i in re.findall(r"\b[a-zA-Z]+\b", normalized_text)
@@ -203,7 +220,7 @@ async def retrieve_translations(state):
     sorted_docs = sorted(enumerate(doc_scores), key=lambda x: x[1], reverse=True)
 
     # 점수가 0보다 큰 상위 항목 선택
-    top_n_indices = [finded[i] for i, score in sorted_docs[:8] if score > 0]
+    top_n_indices = [finded[i] for i, score in sorted_docs[:5] if score > 0]
 
     added = []
     for i in top_n_indices:
@@ -256,7 +273,7 @@ async def translate_text(state):
 
     for key, item in dict_items:
         # 사전 항목 추가
-        if len(key) > 3:
+        if len(key) >= 3:
             if key.lower() in text_replaced_with_korean_dictionary.lower():
                 dictionary_entries.append(
                     f"{key} -> {', '.join(item) if isinstance(item, list) else item}"
@@ -276,7 +293,13 @@ async def translate_text(state):
     if orig_dictionary:
         orig_dictionary = list(orig_dictionary)  # 복사
 
-    dictionary_items = set(orig_dictionary + dictionary_entries)
+    dictionary_items = {}
+
+    for i in dictionary_entries:
+        dictionary_items[i] = i
+    for i in orig_dictionary:
+        dictionary_items[i] = i
+
     if len(dictionary_items) > 0:
         dictionary_text = "\n".join(dictionary_items)
     else:
