@@ -582,26 +582,65 @@ def main():
         api_keys_file = st.file_uploader(
             "API 키 가져오기", type=["json"], key=f"{model_provider}_import_file"
         )
+
+        # 파일 처리 상태를 저장할 session_state 키
+        processed_flag_key = f"{model_provider}_api_keys_file_processed"
+        # 현재 업로드된 파일 ID 저장 키 (선택 사항, 파일 변경 감지용)
+        current_file_id_key = f"{model_provider}_api_keys_file_id"
+
+        # session_state 초기화
+        if processed_flag_key not in st.session_state:
+            st.session_state[processed_flag_key] = False
+        if current_file_id_key not in st.session_state:
+            st.session_state[current_file_id_key] = None
+
         if api_keys_file is not None:
-            try:
-                api_keys_data = json.load(api_keys_file)
-                if model_provider in api_keys_data and isinstance(
-                    api_keys_data[model_provider], list
-                ):
-                    # 기존 텍스트 영역 값을 새로운 API 키로 업데이트
-                    st.session_state[api_keys_key] = "\n".join(
-                        api_keys_data[model_provider]
-                    )
-                    st.sidebar.success(
-                        f"{len(api_keys_data[model_provider])}개의 API 키를 가져왔습니다."
-                    )
-                    st.rerun()
-                else:
-                    st.sidebar.warning(
-                        f"JSON 파일에 {model_provider} API 키가 없습니다."
-                    )
-            except Exception as e:
-                st.sidebar.error(f"JSON 파일 로드 오류: {str(e)}")
+            # 현재 파일 ID 가져오기 -> 파일 이름과 크기로 변경
+            current_file_identifier = (api_keys_file.name, api_keys_file.size)
+
+            # 새 파일이 업로드되었거나 아직 처리되지 않은 경우
+            if (
+                not st.session_state[processed_flag_key]
+                or st.session_state[current_file_id_key] != current_file_identifier
+            ):
+                try:
+                    api_keys_data = json.load(api_keys_file)
+                    if model_provider in api_keys_data and isinstance(
+                        api_keys_data[model_provider], list
+                    ):
+                        # 기존 텍스트 영역 값을 새로운 API 키로 업데이트
+                        new_keys_text = "\n".join(api_keys_data[model_provider])
+                        st.session_state[api_keys_key] = new_keys_text
+
+                        # 처리 완료 상태 및 파일 ID 저장 -> 파일 식별자로 변경
+                        st.session_state[processed_flag_key] = True
+                        st.session_state[current_file_id_key] = current_file_identifier
+
+                        st.sidebar.success(
+                            f"{len(api_keys_data[model_provider])}개의 API 키를 가져왔습니다."
+                        )
+                        # 성공 메시지 후 rerun하여 text_area 업데이트 반영
+                        st.rerun()
+                    else:
+                        st.sidebar.warning(
+                            f"JSON 파일에 {model_provider} API 키가 없습니다."
+                        )
+                        # 오류 발생 시 처리 상태 초기화
+                        st.session_state[processed_flag_key] = False
+                        st.session_state[current_file_id_key] = None
+
+                except Exception as e:
+                    st.sidebar.error(f"JSON 파일 로드 오류: {str(e)}")
+                    # 오류 발생 시 처리 상태 초기화
+                    st.session_state[processed_flag_key] = False
+                    st.session_state[current_file_id_key] = None
+        else:
+            # 파일이 제거되면 처리 상태 초기화
+            if st.session_state[processed_flag_key]:
+                st.session_state[processed_flag_key] = False
+                st.session_state[current_file_id_key] = None
+                # 상태 초기화 후 rerun하여 UI 반영
+                st.rerun()
 
     model_options = {
         "OpenAI": [
@@ -750,9 +789,6 @@ def main():
         "",
         placeholder="경로를 입력해주세요. (예: C:\\Users\\<<이름>>\\Documents\\Minecraft\\mods\\my_modpack\\output)",
     ).replace("\\", "/")
-
-    # 옵션: 이미 번역된 파일은 건너뛰기
-    skip_translated = st.checkbox("이미 번역된 파일은 건너뛰기", value=True)
 
     # 리소스팩 이름 설정
     resourcepack_name = st.text_input("리소스팩 이름", "Auto-Translated-KO")
@@ -1309,12 +1345,6 @@ def main():
                         "output",
                         rel_path.replace(source_lang_code, LANG_CODE, 1),
                     )
-
-                    # 이미 번역된 파일은 건너뛰기
-                    if skip_translated and os.path.exists(output_file):
-                        await update_progress(worker_id, en_file, 100, True)
-                        translated_files[en_file] = output_file
-                        return
 
                     try:
                         # 입력 파일 내용 추출

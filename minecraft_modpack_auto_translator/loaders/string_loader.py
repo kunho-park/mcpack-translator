@@ -95,5 +95,4 @@ class StringLoader(BaseLoader):
 
             return state["restored_text"]
         except Exception as e:
-            self.logger.error(f"문자열 비동기 번역 중 오류 발생: {e}")
-            return value
+            raise e

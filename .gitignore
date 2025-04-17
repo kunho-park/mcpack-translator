@@ -29,3 +29,4 @@ test/
 
 test.py
 uv.lock
+.ruff_cache/
