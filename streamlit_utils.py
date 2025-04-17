@@ -162,7 +162,7 @@ def render_api_key_management(model_provider):
             key=f"{model_provider}_api_keys_input",
         )
         st.session_state[api_keys_key] = api_keys_text
-        api_keys = [key.strip() for key in api_keys_text.split("\\n") if key.strip()]
+        api_keys = [key.strip() for key in api_keys_text.split("\n") if key.strip()]
 
         api_keys_col1, api_keys_col2 = st.sidebar.columns(2)
 

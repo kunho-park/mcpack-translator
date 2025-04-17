@@ -151,6 +151,32 @@ def main():
         custom_dict_file, translation_dictionary, translation_dictionary_lowercase
     )
 
+    # ----- 번역 프로세스 시작 -----
+    log_session_key = "main_translation_logs"  # 고유한 키 사용 권장
+    log_handler = setup_logging(
+        max_log_lines=max_log_lines, session_key=log_session_key
+    )
+
+    # 로그 세션 상태 키 명시적 초기화 (KeyError 방지)
+    if log_session_key not in st.session_state:
+        st.session_state[log_session_key] = []
+
+    # 로그를 표시할 UI 영역 생성 (st.expander 사용 예시)
+    log_container = st.expander("번역 로그", expanded=True)
+    with log_container:
+        # st.session_state에서 로그 메시지를 가져와 표시
+        # 이제 .get() 대신 직접 접근해도 안전합니다.
+        log_messages_to_display = st.session_state[log_session_key]
+        # 로그를 Markdown 형식으로 표시 (줄바꿈 '\n' 대신 Markdown 줄바꿈 '  \n' 사용)
+        st.markdown("  \n".join(log_messages_to_display), unsafe_allow_html=True)
+
+        # 로그 지우기 버튼 (선택 사항)
+        if st.button("로그 지우기"):
+            if log_handler:
+                log_handler.clear_logs()
+                # UI 즉시 업데이트를 위해 rerun
+                st.rerun()
+
     # 번역 실행 버튼
     if st.button("번역 시작"):
         if not api_keys and model_provider != "G4F":
@@ -160,9 +186,6 @@ def main():
         if uploaded_file is None:
             st.error("번역할 파일을 업로드해주세요.")
             st.stop()
-
-        # 로깅 핸들러 설정 (streamlit_utils 사용)
-        log_handler = setup_logging(max_log_lines=max_log_lines)
 
         try:
             with st.spinner("번역 진행 중..."):
