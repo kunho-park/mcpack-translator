@@ -698,7 +698,13 @@ def main():
         max_value=100,
         value=1,
         step=1,
-        help="파일 분할 작업자 수를 설정합니다. 값이 높을수록 한개의 파일을 n개로 분할하여 작업하여 속도가 빨라집니다. 하지만 1보다 크게 설정한다면 사전을 동시에 작성하면서 같은 용어를 사용하지 않는 경우가 발생할 수 있습니다.",
+        help="파일 분할 작업자 수를 설정합니다. 값이 높을수록 한개의 파일을 n개로 분할하여 작업하여 속도가 빨라집니다. 하지만 1보다 크게 설정한다면 사전을 동시에 작성하면서 같은 용어를 사용하지 않는 경우가 발생할 수 있습니다. (랜덤 순서 사용 권장장)",
+    )
+
+    use_random_order = st.sidebar.checkbox(
+        "랜덤 순서로 번역",
+        value=False,
+        help="랜덤 순서로 번역을 진행하여 병렬 번역시 사전의 정확도를 높입니다.",
     )
 
     # UI 업데이트 설정
@@ -1392,6 +1398,7 @@ def main():
                                 progress_callback=progress_callback,
                                 external_context=shared_context,  # 공유 컨텍스트 사용
                                 delay_manager=delay_manager,
+                                use_random_order=use_random_order,
                             )
 
                             # 모든 항목 처리 완료

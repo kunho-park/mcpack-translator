@@ -559,6 +559,7 @@ async def translate_json_file(
     progress_callback=None,
     external_context=None,
     delay_manager: DelayManager = None,
+    use_random_order: bool = False,
 ):
     """
     JSON 파일을 비동기적으로 번역합니다.
@@ -624,7 +625,8 @@ async def translate_json_file(
 
     # 큐에 작업 추가 (랜덤 순서로)
     items = list(data.items())
-    random.shuffle(items)  # 리스트 순서 섞기
+    if use_random_order:
+        random.shuffle(items)  # 리스트 순서 섞기
     for key, value in items:
         await queue.put((key, value))
 
