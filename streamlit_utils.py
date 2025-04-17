@@ -210,7 +210,7 @@ def render_api_key_management(model_provider):
                         if model_provider in api_keys_data and isinstance(
                             api_keys_data[model_provider], list
                         ):
-                            new_keys_text = "\\n".join(api_keys_data[model_provider])
+                            new_keys_text = "\n".join(api_keys_data[model_provider])
                             st.session_state[api_keys_key] = new_keys_text
                             st.session_state[processed_flag_key] = True
                             st.session_state[current_file_id_key] = (
