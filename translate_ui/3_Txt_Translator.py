@@ -82,17 +82,6 @@ def main():
     # target_lang_code는 고정
     target_lang_code = LANG_CODE
 
-    # --- 사전 초기화 및 로드 ---
-    # 공식 사전 로드
-    official_dict, official_dict_lower = initialize_translation_dictionary(
-        source_lang_code, target_lang_code
-    )
-    # 사용자 지정 사전 로드 (빈 사전을 기반으로 로드)
-    custom_dict, custom_dict_lower = load_custom_dictionary(custom_dict_file, {}, {})
-
-    # 번역 컨텍스트 및 다운로드용 병합 사전 생성
-    translation_dictionary = official_dict.copy()
-    translation_dictionary.update(custom_dict)
     # translation_dictionary_lowercase 는 현재 코드에서 직접 사용되지 않으므로 필요시 생성
 
     input_text = st.text_area(
@@ -102,6 +91,20 @@ def main():
 
     # 번역 실행 버튼
     if st.button("번역 시작", key="translate_button"):
+        # --- 사전 초기화 및 로드 ---
+        # 공식 사전 로드
+        official_dict, official_dict_lower = initialize_translation_dictionary(
+            source_lang_code, target_lang_code
+        )
+        # 사용자 지정 사전 로드 (빈 사전을 기반으로 로드)
+        custom_dict, custom_dict_lower = load_custom_dictionary(
+            custom_dict_file, {}, {}
+        )
+
+        # 번역 컨텍스트 및 다운로드용 병합 사전 생성
+        translation_dictionary = official_dict.copy()
+        translation_dictionary.update(custom_dict)
+
         if not api_keys and model_provider != "G4F":
             st.error("API 키를 입력해주세요.")
             st.stop()
