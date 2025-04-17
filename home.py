@@ -45,6 +45,6 @@ st.markdown(
     - **Ollama**: 로컬 LLM 모델 실행 (로컬 서버 설정 필요)
     - **Anthropic**: Claude 모델 (API 키 필요)
 
-    각 서비스 사용에 필요한 설정은 GUI (`streamlit run gui.py`)에서 진행할 수 있습니다.
+    각 서비스 사용에 필요한 설정은 사이드바에서 진행할 수 있습니다.
     """
 )
