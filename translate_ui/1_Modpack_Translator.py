@@ -55,44 +55,18 @@ from streamlit_utils import (
     setup_logging,
 )
 
+st.set_page_config(
+    page_title="모드팩 번역기",
+    page_icon="🌐",
+    layout="wide",
+)
+
 logger = logging.getLogger(__name__)
 # 디버그 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-
-
-class StreamlitLogHandler(logging.Handler):
-    def __init__(self, container, max_log_lines=100):
-        super().__init__()
-        self.container = container
-        self.max_log_lines = max_log_lines
-        self.log_messages = []  # 로그 메시지를 저장할 리스트 추가
-        self.log_area = self.container.empty()
-
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            self.log_messages.append(msg)  # 새 로그 메시지를 리스트에 추가
-
-            # 최대 로그 라인 수를 초과하면 오래된 메시지 제거
-            if len(self.log_messages) > self.max_log_lines:
-                self.log_messages = self.log_messages[-self.max_log_lines :]
-
-            # 저장된 모든 로그 메시지를 표시 (최신 메시지가 아래로)
-            self.log_area.markdown("  \n".join(self.log_messages))
-        except Exception:
-            # 포맷 오류 발생 시 raw 메시지 출력
-            self.log_messages.append(f"Log formatting error: {record.msg}")
-            if len(self.log_messages) > self.max_log_lines:
-                self.log_messages = self.log_messages[-self.max_log_lines :]
-            self.log_area.markdown("  \n".join(self.log_messages))
-
-    def clear_logs(self):
-        self.log_messages = []  # 로그 메시지 리스트 초기화
-        self.log_area.empty()  # 화면에서 로그 지우기
-
 
 # 언어 코드 설정
 # .env 파일에서 언어 코드를 가져옵니다. 기본값은 "ko_kr"입니다.
@@ -660,7 +634,32 @@ def main():
             )
 
             # ----- 번역 프로세스 시작 -----
-            setup_logging(max_log_lines=max_log_lines)
+            log_session_key = "main_translation_logs"  # 고유한 키 사용 권장
+            log_handler = setup_logging(
+                max_log_lines=max_log_lines, session_key=log_session_key
+            )
+
+            # 로그 세션 상태 키 명시적 초기화 (KeyError 방지)
+            if log_session_key not in st.session_state:
+                st.session_state[log_session_key] = []
+
+            # 로그를 표시할 UI 영역 생성 (st.expander 사용 예시)
+            log_container = st.expander("번역 로그", expanded=True)
+            with log_container:
+                # st.session_state에서 로그 메시지를 가져와 표시
+                # 이제 .get() 대신 직접 접근해도 안전합니다.
+                log_messages_to_display = st.session_state[log_session_key]
+                # 로그를 Markdown 형식으로 표시 (줄바꿈 '\n' 대신 Markdown 줄바꿈 '  \n' 사용)
+                st.markdown(
+                    "  \n".join(log_messages_to_display), unsafe_allow_html=True
+                )
+
+                # 로그 지우기 버튼 (선택 사항)
+                if st.button("로그 지우기"):
+                    if log_handler:
+                        log_handler.clear_logs()
+                        # UI 즉시 업데이트를 위해 rerun
+                        st.rerun()
 
             try:
                 with st.spinner("번역 진행 중..."):
@@ -673,15 +672,10 @@ def main():
                         overall_progress_text = st.empty()
                     status_text = st.empty()
 
-                    # --- 로그 초기화/함수 정의는 위로 이동 ---
-                    # log_container = st.expander("번역 로그", expanded=True) # 이동됨
-                    # logs = [] # 이동됨
-                    # def logger.info(...): # 이동됨
-
                     # 작업자별 진행 상황 컨테이너
                     worker_progress_bars = {}
                     worker_progress_texts = {}
-                    worker_status_texts = {}
+                    worker_statuses = {}
 
                     # 작업자별 진행 상황 초기화
                     for i in range(max_workers):
@@ -693,7 +687,11 @@ def main():
                         with worker_cols[1]:
                             worker_progress_texts[i] = st.empty()
 
-                        worker_status_texts[i] = st.empty()
+                        worker_statuses[i] = {
+                            "active": False,
+                            "file": "",
+                            "progress": 0,
+                        }
                         st.markdown("---")
 
                     # LLM 인스턴스 생성
@@ -1031,11 +1029,11 @@ def main():
                                 )
 
                             item_progress = f"{processed_items}/{total_items} 항목"
-                            worker_status_texts[worker_id].markdown(
+                            worker_progress_texts[worker_id].markdown(
                                 f"{status_prefix} - **{worker_statuses[worker_id]['file']}** ({item_progress})"
                             )
                         else:
-                            worker_status_texts[worker_id].markdown(
+                            worker_progress_texts[worker_id].markdown(
                                 f"{status_prefix} - **{worker_statuses[worker_id]['file']}**"
                             )
 

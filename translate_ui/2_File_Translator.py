@@ -51,6 +51,12 @@ def get_parser_by_extension(extension):
     return BaseParser.get_parser_by_extension(extension)
 
 
+st.set_page_config(
+    page_title="단일 파일 번역기",
+    page_icon="📄",
+    layout="wide",
+)
+
 logger = logging.getLogger(__name__)
 # 디버그 로깅 설정
 logging.basicConfig(

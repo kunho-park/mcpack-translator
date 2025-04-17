@@ -33,6 +33,12 @@ from streamlit_utils import (
     setup_logging,
 )
 
+st.set_page_config(
+    page_title="텍스트 번역기",
+    page_icon="✏️",
+    layout="wide",
+)
+
 logger = logging.getLogger(__name__)
 # 디버그 로깅 설정
 logging.basicConfig(
@@ -105,8 +111,28 @@ def main():
             )
             st.stop()
 
-        # 로깅 핸들러 설정
-        log_handler = setup_logging(max_log_lines=max_log_lines)
+        # 로깅 핸들러 설정 및 UI 표시 (수정/추가된 부분)
+        log_session_key = "text_translator_logs"  # 파일별 고유 키
+        log_handler = setup_logging(
+            max_log_lines=max_log_lines, session_key=log_session_key
+        )
+
+        # 로그 세션 상태 키 명시적 초기화 (KeyError 방지)
+        if log_session_key not in st.session_state:
+            st.session_state[log_session_key] = []
+
+        # 로그를 표시할 UI 영역 생성
+        log_container = st.expander("번역 로그", expanded=True)
+        with log_container:
+            log_messages_to_display = st.session_state[log_session_key]
+            log_area = st.markdown(
+                "  \n".join(log_messages_to_display), unsafe_allow_html=True
+            )
+            if st.button("로그 지우기", key="clear_log_button_text"):  # 버튼 키 추가
+                if log_handler:
+                    log_handler.clear_logs()
+                    st.rerun()
+        # --- 로깅 UI 추가 끝 ---
 
         try:
             with st.spinner("번역 진행 중..."):

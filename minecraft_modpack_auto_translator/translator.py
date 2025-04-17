@@ -8,9 +8,9 @@ from langchain.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
 from langchain.llms.base import LLM
-from langchain.llms.utils import enforce_stop_tokens
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import ChatOllama
+from langchain_community.llms.utils import enforce_stop_tokens
 from langchain_core.language_models import BaseChatModel
 from langchain_core.rate_limiters import BaseRateLimiter
 from langchain_google_genai import ChatGoogleGenerativeAI

@@ -35,53 +35,74 @@ _api_server_thread = None
 
 
 class StreamlitLogHandler(logging.Handler):
-    def __init__(self, container, max_log_lines=100):
+    def __init__(self, max_log_lines=100, session_key="streamlit_log_messages"):
         super().__init__()
-        self.container = container
         self.max_log_lines = max_log_lines
-        self.log_messages = []
-        self.log_area = self.container.empty()
+        self.session_key = session_key
+        # 세션 상태에 로그 메시지 리스트 초기화
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = []
 
     def emit(self, record):
-        try:
-            msg = self.format(record)
-            self.log_messages.append(msg)
-            if len(self.log_messages) > self.max_log_lines:
-                self.log_messages = self.log_messages[-self.max_log_lines :]
-            self.log_area.markdown("  \n".join(self.log_messages))
-        except Exception:
-            self.log_messages.append(f"Log formatting error: {record.msg}")
-            if len(self.log_messages) > self.max_log_lines:
-                self.log_messages = self.log_messages[-self.max_log_lines :]
-            self.log_area.markdown("  \n".join(self.log_messages))
+        if self.session_key in st.session_state:
+            try:
+                msg = self.format(record)
+                # 세션 상태의 리스트에 로그 추가
+                log_list = st.session_state[self.session_key]
+                log_list.append(msg)
+                # 최대 로그 라인 수 유지
+                if len(log_list) > self.max_log_lines:
+                    st.session_state[self.session_key] = log_list[-self.max_log_lines :]
+                else:
+                    st.session_state[self.session_key] = log_list
+            except Exception:
+                # 오류 발생 시 간단한 메시지 추가 (직접 UI 업데이트 방지)
+                err_msg = f"Log formatting error: {record.msg}"
+                log_list = st.session_state[self.session_key]
+                log_list.append(err_msg)
+                if len(log_list) > self.max_log_lines:
+                    st.session_state[self.session_key] = log_list[-self.max_log_lines :]
+                else:
+                    st.session_state[self.session_key] = log_list
+                # 실제 오류는 콘솔에 출력될 수 있도록 기본 핸들러 사용 권장
+                logging.error(f"StreamlitLogHandler error: {traceback.format_exc()}")
 
     def clear_logs(self):
-        self.log_messages = []
-        self.log_area.empty()
+        # 세션 상태의 로그 리스트 비우기
+        st.session_state[self.session_key] = []
 
 
-def setup_logging(max_log_lines=100):
-    """Streamlit UI에 로그를 표시하도록 로깅 설정"""
-    with st.expander("로그 보기"):
-        log_container = st.container()
-        handler = StreamlitLogHandler(log_container, max_log_lines)
-        handler.setLevel(logging.INFO)
+def setup_logging(max_log_lines=100, session_key="streamlit_log_messages"):
+    """Streamlit UI와 통합된 로깅을 설정합니다."""
+    # 루트 로거 가져오기
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)  # 필요에 따라 레벨 조정
 
-        # 루트 로거 및 모듈 로거에 핸들러 추가
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
-        root_logger.setLevel(logging.INFO)  # Ensure root logger level is appropriate
+    # Streamlit 핸들러가 이미 추가되었는지 확인
+    handler_exists = any(
+        isinstance(h, StreamlitLogHandler) and h.session_key == session_key
+        for h in root_logger.handlers
+    )
 
-        # Ensure minecraft_modpack_auto_translator logger also gets the handler
-        modpack_logger = logging.getLogger("minecraft_modpack_auto_translator")
-        # Avoid adding handler if it already exists to prevent duplicate logs
-        if handler not in modpack_logger.handlers:
-            modpack_logger.addHandler(handler)
-        modpack_logger.setLevel(
-            logging.INFO
-        )  # Ensure modpack logger level is appropriate
+    if not handler_exists:
+        # Streamlit 핸들러 생성 및 추가 (log_area 인자 제거)
+        streamlit_handler = StreamlitLogHandler(
+            max_log_lines=max_log_lines, session_key=session_key
+        )
+        # 로그 포맷 설정 (예시)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        streamlit_handler.setFormatter(formatter)
+        root_logger.addHandler(streamlit_handler)
+        # 핸들러 반환 (clear_logs 호출 등에 사용 가능)
+        return streamlit_handler
 
-        return handler
+    # 이미 핸들러가 존재하면 기존 핸들러 반환 또는 None 반환
+    for h in root_logger.handlers:
+        if isinstance(h, StreamlitLogHandler) and h.session_key == session_key:
+            # 최대 라인 수 업데이트 (선택 사항)
+            h.max_log_lines = max_log_lines
+            return h
+    return None
 
 
 # --- API 설정 관련 ---
