@@ -278,83 +278,83 @@ def main():
                         processed_items_count, \
                         total_items_count
                     temp_input_file = None
+                    temp_output_dir = None  # finally 블록에서 사용하기 위해 정의
                     translated_data_dict = None  # 결과 딕셔너리
                     translated_content_str = None  # 결과 문자열
+                    parser = None  # finally 블록에서 사용하기 위해 정의
+
                     try:
-                        # 원본 파일 내용으로 임시 입력 파일 생성
+                        # 1. 원본 파일 파싱
+                        file_ext = os.path.splitext(uploaded_file.name)[1].lower()
+                        parser = get_parser_by_extension(file_ext)
+                        original_data = None
+                        if parser:
+                            try:
+                                original_data = parser.load(file_content_str)
+                                if isinstance(original_data, dict):
+                                    total_items_count = len(original_data)
+                                else:  # 파싱 결과가 딕셔너리가 아닌 경우 (예: 단순 문자열 리스트 등)
+                                    logger.warning(
+                                        f"파서가 딕셔너리 형태가 아닌 데이터를 반환했습니다: {type(original_data)}"
+                                    )
+                                    total_items_count = (
+                                        1  # 또는 다른 적절한 방식으로 개수 추정
+                                    )
+                                logger.info(
+                                    f"원본 파일 파싱 완료 ({total_items_count} 항목 추정). 파서: {parser.__class__.__name__}"
+                                )
+                            except Exception as parse_err:
+                                logger.error(
+                                    f"원본 파일 파싱 오류 ({parser.__class__.__name__}): {parse_err}, 번역을 진행할 수 없습니다."
+                                )
+                                st.error(
+                                    f"원본 파일({uploaded_file.name}) 파싱 중 오류 발생: {parse_err}"
+                                )
+                                return None, None  # 오류 시 None 반환
+                        else:
+                            logger.error(
+                                f"지원되지 않는 파일 확장자({file_ext})입니다. 파서를 찾을 수 없습니다."
+                            )
+                            st.error(f"지원되지 않는 파일 확장자({file_ext})입니다.")
+                            return None, None  # 오류 시 None 반환
+
+                        # total_items_count가 0인 경우 (빈 파일 등) 처리
+                        if total_items_count == 0:
+                            logger.info("번역할 항목이 없습니다.")
+                            st.info("파일 내용이 비어있거나 번역할 항목이 없습니다.")
+                            # 빈 파일이라도 원본 형식으로 저장된 빈 결과 제공
+                            translated_data_dict = {}  # 빈 딕셔너리
+                            translated_content_str = (
+                                parser.save(translated_data_dict) if parser else ""
+                            )
+                            await update_progress(
+                                done=True, total_items=0, processed_items=0
+                            )
+                            return translated_data_dict, translated_content_str
+
+                        # 2. 파싱된 데이터를 JSON 형식으로 임시 입력 파일에 저장
+                        json_input_content = json.dumps(
+                            original_data, ensure_ascii=False, indent=4
+                        )
+
                         with tempfile.NamedTemporaryFile(
                             delete=False,
                             mode="w",
                             encoding="utf-8",
-                            suffix=os.path.splitext(uploaded_file.name)[1],
+                            suffix=".json",  # 항상 .json 으로 저장
                         ) as tmp_f:
-                            # 원본 파서를 사용하여 원본 내용을 한번 파싱하고 다시 저장 (정규화 목적)
-                            try:
-                                file_ext = os.path.splitext(uploaded_file.name)[
-                                    1
-                                ].lower()
-                                parser = get_parser_by_extension(file_ext)
-                                if parser:
-                                    original_data = parser.load(file_content_str)
-                                    # total_items_count 설정
-                                    if isinstance(original_data, dict):
-                                        total_items_count = len(original_data)
-                                    # 원본 파일 형식으로 다시 저장
-                                    normalized_content = parser.save(original_data)
-                                    tmp_f.write(normalized_content)
-                                else:
-                                    # 파서 없으면 원본 그대로 사용
-                                    tmp_f.write(file_content_str)
-                                    # 원본 내용을 기반으로 대략적인 항목 수 계산 (JSON, LANG만)
-                                    if file_ext == ".json":
-                                        try:
-                                            total_items_count = len(
-                                                json.loads(file_content_str)
-                                            )
-                                        except json.JSONDecodeError:
-                                            total_items_count = (
-                                                file_content_str.count("\n") + 1
-                                            )
-                                    elif file_ext in [".lang", ".txt"]:
-                                        total_items_count = (
-                                            file_content_str.count("\n") + 1
-                                        )
-                                    else:
-                                        total_items_count = 1  # 알 수 없을 때 기본값
-
-                            except Exception as parse_err:
-                                logger.warning(
-                                    f"원본 파일 정규화 중 오류: {parse_err}, 원본 내용 그대로 사용합니다."
-                                )
-                                tmp_f.write(file_content_str)
-                                # 원본 내용을 기반으로 대략적인 항목 수 계산 (JSON, LANG만)
-                                file_ext = os.path.splitext(uploaded_file.name)[
-                                    1
-                                ].lower()
-                                if file_ext == ".json":
-                                    try:
-                                        total_items_count = len(
-                                            json.loads(file_content_str)
-                                        )
-                                    except json.JSONDecodeError:
-                                        total_items_count = (
-                                            file_content_str.count("\n") + 1
-                                        )
-                                elif file_ext in [".lang", ".txt"]:
-                                    total_items_count = file_content_str.count("\n") + 1
-                                else:
-                                    total_items_count = 1  # 알 수 없을 때 기본값
-
+                            tmp_f.write(json_input_content)
                             temp_input_file = tmp_f.name
-                        logger.info(f"임시 입력 파일 생성: {temp_input_file}")
+                        logger.info(f"임시 JSON 입력 파일 생성: {temp_input_file}")
 
                         # 임시 출력 파일 경로 생성 (JSON으로 저장될 예정)
                         temp_output_dir = tempfile.mkdtemp()
+                        # 출력 파일 이름도 일관성 있게 .json 사용
+                        temp_output_filename = f"translated_{os.path.splitext(os.path.basename(temp_input_file))[0]}.json"
                         temp_output_file = os.path.join(
-                            temp_output_dir,
-                            f"translated_{os.path.splitext(uploaded_file.name)[0]}.json",
-                        )  # 확장자 .json
-                        logger.info(f"임시 출력 파일 경로: {temp_output_file}")
+                            temp_output_dir, temp_output_filename
+                        )
+                        logger.info(f"임시 JSON 출력 파일 경로: {temp_output_file}")
 
                         current_api_key_index = st.session_state.api_key_index
                         current_api_key = (
@@ -374,10 +374,10 @@ def main():
                         )
 
                         processed_items_count = 0  # 콜백용 카운터 초기화
-                        # translate_dict 대신 translate_json_file 호출
-                        final_dictionary = await translate_json_file(  # 함수 이름 변경 및 인자 수정
-                            input_path=temp_input_file,
-                            output_path=temp_output_file,  # 출력 경로 추가 (JSON으로 저장됨)
+                        # translate_dict 대신 translate_json_file 호출 (이제 항상 JSON 파일을 입력받음)
+                        final_dictionary = await translate_json_file(
+                            input_path=temp_input_file,  # JSON 임시 파일 경로
+                            output_path=temp_output_file,  # JSON 출력 경로
                             custom_dictionary_dict=shared_context.get_dictionary(),
                             llm=get_translator(
                                 provider=model_provider.lower(),
@@ -397,13 +397,14 @@ def main():
 
                         translation_dictionary = final_dictionary  # 최종 사전 업데이트
 
-                        # 번역된 JSON 파일 내용 읽고 원본 형식으로 변환
+                        # 4. 번역된 JSON 파일 내용 읽기
                         if os.path.exists(temp_output_file):
                             with open(temp_output_file, "r", encoding="utf-8") as f:
                                 translated_json_content = f.read()
 
                             # JSON 파싱
                             try:
+                                # 여기서 얻는 것은 번역된 내용의 딕셔너리
                                 translated_data_dict = json.loads(
                                     translated_json_content
                                 )
@@ -414,20 +415,34 @@ def main():
                                 )
                                 raise  # 오류 발생 시 함수 중단
 
-                            # 원본 파일 확장자에 맞는 파서 가져오기
-                            file_ext = os.path.splitext(uploaded_file.name)[1].lower()
-                            parser = get_parser_by_extension(file_ext)
-
+                            # 5. 번역된 딕셔너리를 원본 파일 형식으로 변환
                             if parser:
-                                # 파서를 사용하여 원본 형식의 문자열로 변환
-                                translated_content_str = parser.save(
-                                    translated_data_dict
-                                )
+                                try:
+                                    # 파서를 사용하여 원본 형식의 문자열로 변환
+                                    translated_content_str = parser.save(
+                                        translated_data_dict
+                                    )
+                                    logger.info(
+                                        f"번역 결과를 원본 형식({file_ext})으로 변환 완료."
+                                    )
+                                except Exception as save_err:
+                                    logger.error(
+                                        f"번역 결과 저장 오류 ({parser.__class__.__name__}): {save_err}"
+                                    )
+                                    st.error(
+                                        f"번역 결과를 원본 형식({file_ext})으로 저장 중 오류 발생: {save_err}"
+                                    )
+                                    # 저장 실패 시 JSON 내용이라도 보여주도록 설정
+                                    translated_content_str = translated_json_content
+                                    st.warning(
+                                        "결과를 원본 형식으로 변환하는 데 실패하여 JSON 형식으로 표시합니다."
+                                    )
+
                             else:
+                                # 이 경우는 발생하면 안 되지만, 안전 장치
                                 logger.warning(
-                                    f"지원되지 않는 파일 확장자({file_ext})의 결과 파서 없음. JSON 내용을 그대로 사용합니다."
+                                    f"결과 저장 단계에서 원본 파서({file_ext})를 찾을 수 없음. JSON 내용을 그대로 사용합니다."
                                 )
-                                # 파서가 없으면 JSON 문자열을 그대로 사용 (다운로드용)
                                 translated_content_str = translated_json_content
 
                         else:
@@ -445,7 +460,7 @@ def main():
                             processed_items=total_items_count,
                         )  # 최종 완료 업데이트
 
-                        # 결과 반환 (딕셔너리, 문자열)
+                        # 결과 반환 (딕셔너리, 원본 형식 문자열)
                         return translated_data_dict, translated_content_str
 
                     except Exception as e:
@@ -466,8 +481,11 @@ def main():
                                 logger.info(f"임시 입력 파일 삭제: {temp_input_file}")
                             except Exception as e:
                                 logger.warning(f"임시 입력 파일 삭제 실패: {e}")
-                        if "temp_output_dir" in locals() and os.path.exists(
+                        if (
                             temp_output_dir
+                            and os.path.exists(  # temp_output_dir 변수 확인 추가
+                                temp_output_dir
+                            )
                         ):
                             try:
                                 import shutil
