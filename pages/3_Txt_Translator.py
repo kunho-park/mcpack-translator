@@ -21,7 +21,6 @@ from minecraft_modpack_auto_translator.graph import (
 from minecraft_modpack_auto_translator.loaders.context import TranslationContext
 from minecraft_modpack_auto_translator.translator import get_translator
 from streamlit_utils import (
-    ensure_api_server_running,
     get_rate_limiter,
     initialize_translation_dictionary,
     load_custom_dictionary,
@@ -33,9 +32,6 @@ from streamlit_utils import (
     render_rate_limiter_settings,
     setup_logging,
 )
-
-ensure_api_server_running()
-
 
 logger = logging.getLogger(__name__)
 # 디버그 로깅 설정

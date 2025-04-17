@@ -28,7 +28,6 @@ from minecraft_modpack_auto_translator.loaders.context import (
 )
 from minecraft_modpack_auto_translator.translator import get_translator
 from streamlit_utils import (
-    ensure_api_server_running,
     get_delay_manager,
     get_rate_limiter,
     get_supported_extensions,
@@ -43,8 +42,6 @@ from streamlit_utils import (
     render_request_delay_settings,
     setup_logging,
 )
-
-ensure_api_server_running()
 
 
 def get_parser_by_extension(extension):

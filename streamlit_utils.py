@@ -1,9 +1,7 @@
 import json
 import logging
 import os
-import socket
 import sys
-import threading
 import time
 import traceback
 
@@ -16,7 +14,6 @@ if sys.platform.startswith("win"):
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from g4f.api import run_api
 
 from minecraft_modpack_auto_translator.config import (
     OFFICIAL_EN_LANG_FILE,
@@ -32,33 +29,6 @@ logger = logging.getLogger(__name__)
 # --- API 서버 관련 ---
 
 _api_server_thread = None
-
-
-def check_api_server():
-    """API 서버가 실행 중인지 확인하는 함수"""
-    try:
-        # 소켓 생성 및 0.5초 타임아웃 설정
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(0.5)
-        result = sock.connect_ex(("0.0.0.0", 1337))
-        sock.close()
-        return result == 0  # 연결 성공 시 True 반환
-    except Exception:
-        return False  # 오류 발생 시 False 반환
-
-
-def ensure_api_server_running():
-    """API 서버가 실행 중이 아니면 백그라운드 스레드로 시작"""
-    global _api_server_thread
-    if not check_api_server():
-        if _api_server_thread is None or not _api_server_thread.is_alive():
-            _api_server_thread = threading.Thread(target=run_api, daemon=True)
-            _api_server_thread.start()
-            logger.info("API 서버가 스레드로 실행 중입니다.")
-        else:
-            logger.info("API 서버가 이미 스레드로 실행 중입니다.")
-    else:
-        logger.info("API 서버가 이미 실행 중입니다.")
 
 
 # --- 로깅 관련 ---
@@ -138,7 +108,7 @@ MODEL_OPTIONS = {
     "Grok": ["grok-2-1212"],
     "Ollama": ["직접 입력 하세요."],
     "Anthropic": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022"],
-    "G4F": ["gpt-4o-mini"],
+    "G4F": ["gpt-4o"],
 }
 
 
@@ -524,7 +494,6 @@ def load_custom_dictionary(
 ):
     """업로드된 커스텀 사전 파일을 로드하고 기존 사전에 병합합니다."""
     if custom_dict_file is not None:
-        initial_count = len(translation_dictionary)
         try:
             custom_dict_data = json.load(custom_dict_file)
             added_count = 0
