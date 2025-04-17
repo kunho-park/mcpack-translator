@@ -97,6 +97,8 @@ h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
+htbuilder==0.9.0
+    # via st-annotated-text
 httpcore==1.0.8
     # via httpx
 httpx==0.28.1
@@ -323,6 +325,8 @@ sqlalchemy==2.0.40
     # via
     #   langchain
     #   langchain-community
+st-annotated-text==4.0.2
+    # via mc-modpack-auto-translate (pyproject.toml)
 starlette==0.46.2
     # via fastapi
 streamlit==1.44.1
