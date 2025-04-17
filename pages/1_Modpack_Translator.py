@@ -15,23 +15,21 @@ from glob import escape as glob_escape
 from glob import glob
 
 import streamlit as st
-from langchain_core.rate_limiters import InMemoryRateLimiter
 
 # Windows 환경에서 asyncio 이벤트 루프 정책 설정
 if sys.platform.startswith("win"):
     import asyncio
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
 import minecraft_modpack_auto_translator
 from minecraft_modpack_auto_translator import create_resourcepack
 from minecraft_modpack_auto_translator.config import (
     DICTIONARY_PREFIX_WHITELIST,
     DICTIONARY_SUFFIX_BLACKLIST,
     DIR_FILTER_WHITELIST,
-    OFFICIAL_EN_LANG_FILE,
-    OFFICIAL_KO_LANG_FILE,
 )
-from minecraft_modpack_auto_translator.delay_manager import DelayManager
 from minecraft_modpack_auto_translator.graph import (
     create_translation_graph,
     registry,
@@ -40,10 +38,26 @@ from minecraft_modpack_auto_translator.loaders.context import (
     TranslationContext,
 )
 from minecraft_modpack_auto_translator.translator import get_translator
-
-st.set_page_config(
-    page_title="마인크래프트 모드팩 자동 번역기", page_icon="🎮", layout="wide"
+from streamlit_utils import (
+    ensure_api_server_running,
+    extract_lang_content,
+    get_delay_manager,
+    get_rate_limiter,
+    get_supported_extensions,
+    initialize_translation_dictionary,
+    load_custom_dictionary,
+    render_api_key_management,
+    render_custom_dictionary_upload,
+    render_log_settings,
+    render_model_provider_selection,
+    render_model_selection,
+    render_rate_limiter_settings,
+    render_request_delay_settings,
+    setup_logging,
 )
+
+ensure_api_server_running()
+
 
 logger = logging.getLogger(__name__)
 # 디버그 로깅 설정
@@ -84,24 +98,6 @@ class StreamlitLogHandler(logging.Handler):
         self.log_area.empty()  # 화면에서 로그 지우기
 
 
-# Set up logging to capture all info level logs from the root logger
-def setup_logging(max_log_lines=100):
-    with st.expander("로그 보기"):
-        log_container = st.container()
-        handler = StreamlitLogHandler(log_container, max_log_lines)
-        handler.setLevel(logging.INFO)
-
-        # 메인 로거에 핸들러 추가
-        logger.addHandler(handler)
-
-        # minecraft_modpack_auto_translator 모듈의 로거에도 동일한 핸들러 추가
-        modpack_logger = logging.getLogger("minecraft_modpack_auto_translator")
-        modpack_logger.addHandler(handler)
-        modpack_logger.setLevel(logging.INFO)
-
-        return handler
-
-
 # 언어 코드 설정
 # .env 파일에서 언어 코드를 가져옵니다. 기본값은 "ko_kr"입니다.
 LANG_CODE = os.getenv("LANG_CODE", "ko_kr")
@@ -123,13 +119,6 @@ API_BASE_ENV_VARS = {
     "Ollama": "OLLAMA_API_BASE",
     "Anthropic": "ANTHROPIC_API_BASE",
 }
-
-
-def get_supported_extensions():
-    """지원하는 파일 확장자 목록을 반환합니다."""
-    from minecraft_modpack_auto_translator.parsers.base_parser import BaseParser
-
-    return BaseParser.get_supported_extensions()
 
 
 def get_parser_by_extension(extension):
@@ -517,57 +506,8 @@ def process_modpack_directory(
     return source_lang_files, mods_jar_files
 
 
-def extract_lang_content(file_path):
-    """파일에서 언어 내용을 추출합니다."""
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        file_ext = os.path.splitext(file_path)[1]
-        parser_class = get_parser_by_extension(file_ext)
-
-        if parser_class:
-            return parser_class.load(content)
-        else:
-            st.error(f"지원되지 않는 파일 형식: {file_ext}")
-            return {}
-    except Exception as e:
-        st.error(
-            f"파일 내용 추출 중 오류: {file_path}, {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
-        )
-        error_traceback = traceback.format_exc()
-        logger.error(error_traceback)
-        return {}
-
-
-def save_lang_content(file_path, data):
-    """언어 내용을 파일에 저장합니다."""
-    try:
-        file_ext = os.path.splitext(file_path)[1]
-        parser_class = get_parser_by_extension(file_ext)
-
-        if parser_class:
-            content = parser_class.save(data)
-
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(content)
-
-            return True
-        else:
-            st.error(f"지원되지 않는 파일 형식: {file_ext}")
-            return False
-    except Exception as e:
-        st.error(
-            f"파일 저장 중 오류: {str(e)}\n\n상세 오류 정보는 콘솔 창에서 확인해주세요."
-        )
-        error_traceback = traceback.format_exc()
-        logger.error(error_traceback)
-        return False
-
-
 def main():
-    st.title("마인크래프트 모드팩 자동 번역기")
+    st.title("🌐 원클릭 모드팩 번역기")
 
     # 글로벌 API 키 인덱스 상태 변수 초기화
     if "api_key_index" not in st.session_state:
@@ -576,229 +516,48 @@ def main():
     # 사이드바에 모델 선택 옵션
     st.sidebar.header("번역 설정")
 
-    # LLM 모델 선택
-    model_provider = st.sidebar.selectbox(
-        "AI 모델 제공자 선택", ["OpenAI", "Google", "Grok", "Ollama", "Anthropic"]
-    )
-
-    # 모델 제공자에 따른 키와 모델 입력 필드
-    env_api_key = os.getenv(API_KEY_ENV_VARS.get(model_provider, ""))
-
-    # API 키 저장소 키
-    api_keys_key = f"{model_provider}_api_keys"
-
-    # API 키 관리 섹션
-    st.sidebar.subheader("API 키 관리")
-
-    # 세션 상태에 API 키 저장
-    if api_keys_key not in st.session_state:
-        st.session_state[api_keys_key] = env_api_key if env_api_key else ""
-
-    # API 키 텍스트 영역 (여러 줄 입력 가능)
-    api_keys_text = st.sidebar.text_area(
-        f"{model_provider} API 키 목록 (한 줄에 하나씩)",
-        value=st.session_state[api_keys_key],
-        placeholder="여러 API 키를 한 줄에 하나씩 입력하세요.\n번역 시 위에서부터 순서대로 사용됩니다.",
-        height=150,
-        key=f"{model_provider}_api_keys_input",
-    )
-
-    # 입력된 API 키를 세션 상태에 저장
-    st.session_state[api_keys_key] = api_keys_text
-
-    # API 키 목록 처리
-    api_keys = [key.strip() for key in api_keys_text.split("\n") if key.strip()]
-
-    # API 키 가져오기/내보내기 버튼
-    api_keys_col1, api_keys_col2 = st.sidebar.columns(2)
-
-    with api_keys_col1:
-        if st.button("API 키 내보내기", key=f"{model_provider}_export_button"):
-            if api_keys:
-                # API 키를 JSON으로 변환
-                api_keys_json = json.dumps(
-                    {model_provider: api_keys}, ensure_ascii=False, indent=2
-                )
-                # 다운로드 링크 생성
-                st.download_button(
-                    label="JSON 파일 다운로드",
-                    data=api_keys_json,
-                    file_name=f"{model_provider.lower()}_api_keys.json",
-                    mime="application/json",
-                    key=f"{model_provider}_download_button",
-                )
-            else:
-                st.sidebar.warning("내보낼 API 키가 없습니다.")
-
-    with api_keys_col2:
-        api_keys_file = st.file_uploader(
-            "API 키 가져오기", type=["json"], key=f"{model_provider}_import_file"
-        )
-
-        # 파일 처리 상태를 저장할 session_state 키
-        processed_flag_key = f"{model_provider}_api_keys_file_processed"
-        # 현재 업로드된 파일 ID 저장 키 (선택 사항, 파일 변경 감지용)
-        current_file_id_key = f"{model_provider}_api_keys_file_id"
-
-        # session_state 초기화
-        if processed_flag_key not in st.session_state:
-            st.session_state[processed_flag_key] = False
-        if current_file_id_key not in st.session_state:
-            st.session_state[current_file_id_key] = None
-
-        if api_keys_file is not None:
-            # 현재 파일 ID 가져오기 -> 파일 이름과 크기로 변경
-            current_file_identifier = (api_keys_file.name, api_keys_file.size)
-
-            # 새 파일이 업로드되었거나 아직 처리되지 않은 경우
-            if (
-                not st.session_state[processed_flag_key]
-                or st.session_state[current_file_id_key] != current_file_identifier
-            ):
-                try:
-                    api_keys_data = json.load(api_keys_file)
-                    if model_provider in api_keys_data and isinstance(
-                        api_keys_data[model_provider], list
-                    ):
-                        # 기존 텍스트 영역 값을 새로운 API 키로 업데이트
-                        new_keys_text = "\n".join(api_keys_data[model_provider])
-                        st.session_state[api_keys_key] = new_keys_text
-                        # 처리 완료 상태 및 파일 ID 저장 -> 파일 식별자로 변경
-                        st.session_state[processed_flag_key] = True
-                        st.session_state[current_file_id_key] = current_file_identifier
-
-                        st.sidebar.success(
-                            f"{len(api_keys_data[model_provider])}개의 API 키를 가져왔습니다."
-                        )
-                        # 성공 메시지 후 rerun하여 text_area 업데이트 반영
-                        st.rerun()
-                    else:
-                        st.sidebar.warning(
-                            f"JSON 파일에 {model_provider} API 키가 없습니다."
-                        )
-                        # 오류 발생 시 처리 상태 초기화
-                        st.session_state[processed_flag_key] = False
-                        st.session_state[current_file_id_key] = None
-
-                except Exception as e:
-                    st.sidebar.error(f"JSON 파일 로드 오류: {str(e)}")
-                    # 오류 발생 시 처리 상태 초기화
-                    st.session_state[processed_flag_key] = False
-                    st.session_state[current_file_id_key] = None
-        else:
-            # 파일이 제거되면 처리 상태 초기화
-            if st.session_state[processed_flag_key]:
-                st.session_state[processed_flag_key] = False
-                st.session_state[current_file_id_key] = None
-                # 상태 초기화 후 rerun하여 UI 반영
-                st.rerun()
-
-    model_options = {
-        "OpenAI": [
-            "gpt-4.5-preview",
-            "gpt-4o",
-            "gpt-4o-mini",
-        ],
-        "Google": [
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-lite",
-        ],
-        "Grok": ["grok-2-1212"],
-        "Ollama": ["직접 입력 하세요."],
-        "Anthropic": [
-            "claude-3-7-sonnet-20250219",
-            "claude-3-5-sonnet-20241022",
-        ],
-    }
-
-    # 모델 선택 (드롭다운 또는 직접 입력)
-    use_custom_model = st.sidebar.checkbox("직접 모델명 입력하기")
-
-    if use_custom_model:
-        selected_model = st.sidebar.text_input("모델명 직접 입력")
-    else:
-        selected_model = st.sidebar.selectbox(
-            "모델 선택", model_options.get(model_provider, [])
-        )
-
-    # API Base URL (환경 변수에서 먼저 읽기)
-    env_api_base = os.getenv(API_BASE_ENV_VARS.get(model_provider, ""))
-    default_api_base = "http://localhost:11434" if model_provider == "Ollama" else ""
-
-    # API Base URL 수정 여부 체크박스
-    use_custom_api_base = st.sidebar.checkbox("API Base URL 수정하기")
-
-    if use_custom_api_base:
-        api_base_url = st.sidebar.text_input(
-            "API Base URL", value=env_api_base if env_api_base else default_api_base
-        )
-    else:
-        api_base_url = None
-
-    # 모델 온도(temperature) 설정 - 모든 모델에 공통 적용
-    temperature = st.sidebar.slider(
-        "Temperature",
-        min_value=0.0,
-        max_value=2.0,
-        value=0.0,
-        step=0.05,
-        help="값이 낮을수록 더 창의성이 낮은 응답이, 높을수록 더 창의성이 높은 응답이 생성됩니다. 각 모델별로 제공사(Google, OpenAI)가 추천하는 값이 다름으로 공식 문서를 참고하여 설정하세요.",
-    )
-
-    # API 속도 제한 설정
-    st.sidebar.subheader("API 속도 제한")
-    use_rate_limiter = st.sidebar.checkbox("API 속도 제한 사용", value=True)
-    rpm = st.sidebar.number_input(
-        "분당 요청 수(RPM)",
-        min_value=1,
-        max_value=1000,
-        value=60,
-        step=1,
-        disabled=not use_rate_limiter,
-        help="분당 최대 API 요청 횟수를 설정합니다. 값이 낮을수록 API 할당량을 절약할 수 있습니다.",
-    )
-
-    st.sidebar.subheader("요청 딜레이 설정")
-    use_request_delay = st.sidebar.checkbox("요청 사이 딜레이 사용", value=False)
-    request_delay = st.sidebar.number_input(
-        "요청 간 딜레이(초)",
-        min_value=0.0,
-        max_value=10.0,
-        value=0.5,
-        step=0.1,
-        format="%.1f",
-        disabled=not use_request_delay,
-        help="각 API 요청 사이의 최소 대기 시간을 설정합니다. 값이 높을수록 API 오류가 감소할 수 있지만 번역 속도가 느려집니다.",
-    )
+    model_provider = render_model_provider_selection()
+    api_keys = render_api_key_management(model_provider)
+    selected_model, api_base_url, temperature = render_model_selection(model_provider)
+    use_rate_limiter, rpm = render_rate_limiter_settings(model_provider)
+    use_request_delay, request_delay = render_request_delay_settings(model_provider)
 
     # 병렬 처리 설정
     st.sidebar.subheader("병렬 처리 설정")
-    max_workers = st.sidebar.number_input(
-        "동시 작업자 수",
-        min_value=1,
-        max_value=100,
-        value=5,
-        step=1,
-        help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다. 이 숫자는 높을수록 몇개의 파일을 동시에 열고 작업할지를 설정 합니다.",
-    )
+    if model_provider == "G4F":
+        max_workers = 5  # G4F에 적합한 동시 작업자 수
+        file_split_number = 3  # G4F에서는 파일 분할 비활성화
+        st.sidebar.markdown(
+            "G4F 모드: 동시 작업자 수 고정 (5명)  \nG4F 모드: 파일 분할 작업자 수 고정 (3개)"
+        )
+    else:
+        max_workers = st.sidebar.number_input(
+            "동시 작업자 수",
+            min_value=1,
+            max_value=100,
+            value=5,
+            step=1,
+            help="동시에 처리할 번역 작업 수를 설정합니다. 값이 높을수록 번역 속도가 빨라지지만, API 할당량을 빠르게 소모할 수 있습니다. 이 숫자는 높을수록 몇개의 파일을 동시에 열고 작업할지를 설정 합니다.",
+        )
 
-    file_split_number = st.sidebar.number_input(
-        "파일 분할 작업자 수",
-        min_value=1,
-        max_value=100,
-        value=1,
-        step=1,
-        help="파일 분할 작업자 수를 설정합니다. 값이 높을수록 한개의 파일을 n개로 분할하여 작업하여 속도가 빨라집니다. 하지만 1보다 크게 설정한다면 사전을 동시에 작성하면서 같은 용어를 사용하지 않는 경우가 발생할 수 있습니다. (랜덤 순서 사용 권장장)",
-    )
+        file_split_number = st.sidebar.number_input(
+            "파일 분할 작업자 수",
+            min_value=1,
+            max_value=100,
+            value=1,
+            step=1,
+            help="파일 분할 작업자 수를 설정합니다. 값이 높을수록 한개의 파일을 n개로 분할하여 작업하여 속도가 빨라집니다. 하지만 1보다 크게 설정한다면 사전을 동시에 작성하면서 같은 용어를 사용하지 않는 경우가 발생할 수 있습니다. (랜덤 순서 사용 권장장)",
+        )
 
     use_random_order = st.sidebar.checkbox(
         "랜덤 순서로 번역",
         value=False,
-        help="랜덤 순서로 번역을 진행하여 병렬 번역시 사전의 정확도를 높입니다.",
+        help="파일 내부 항목을 랜덤 순서로 번역하여 병렬 번역 시 사전의 정확도를 높입니다.",
+        key="random_order_checkbox",
     )
 
     # UI 업데이트 설정
-    st.sidebar.subheader("UI 업데이트 설정")
+    st.sidebar.subheader("UI 설정")
     update_interval = st.sidebar.slider(
         "업데이트 간격(초)",
         min_value=1.0,
@@ -808,32 +567,30 @@ def main():
         help="UI가 업데이트되는 간격을 설정합니다. 값이 낮을수록 실시간으로 정보가 갱신되지만 성능에 영향을 줄 수 있습니다.",
     )
 
-    st.sidebar.subheader("로그 설정")
-    max_log_lines = st.sidebar.number_input(
-        "최대 로그 라인 수",
-        min_value=100,
-        max_value=1000,
-        value=100,
-        step=100,
-    )
-
-    # 커스텀 사전 업로드
-    st.sidebar.header("커스텀 사전")
-    custom_dict_file = st.sidebar.file_uploader(
-        "커스텀 사전 업로드 (JSON)", type=["json"]
-    )
+    max_log_lines = render_log_settings()
+    custom_dict_file = render_custom_dictionary_upload()
 
     # 모드팩 선택
-    st.header("모드팩 파일 선택")
+    # 폴더 선택 (실제로는 폴더 경로 입력) -> 파일 업로드로 변경
+    with st.container(border=True):
+        st.subheader("📌 업로드할 ZIP 파일 안내")
+        st.markdown("""
+        - **마인크래프트 모드팩 ZIP 파일**을 업로드해주세요  
+        - 일반적인 `.minecraft` 폴더를 압축한 ZIP 파일을 의미합니다  
+        - 주로 포함되어야 하는 폴더:  
+          `📁 mods` `📁 config` `📁 kubeJS`  
+        - ⚠️ 서버팩이 아닌 **클라이언트 모드팩**을 추천합니다  
+        - 모드팩 용량이 2GB 초과시:  
+          `mods`, `kubejs`, `config` 폴더만 압축해주세요
+        """)
 
-    # 원본 언어 코드 입력
+        # 원본 언어 코드 입력
     source_lang_code = st.text_input(
         "원본 언어 코드",
         "en_us",
         placeholder="번역할 원본 언어 코드를 입력하세요 (예: en_us)",
     ).lower()  # 입력값을 소문자로 변환
 
-    # 폴더 선택 (실제로는 폴더 경로 입력) -> 파일 업로드로 변경
     uploaded_file = st.file_uploader("모드팩 ZIP 파일 업로드", type=["zip"])
 
     # 번역 결과, 기존 번역 자동 사전 구축 옵션
@@ -855,52 +612,18 @@ def main():
     translation_dictionary = {}
     translation_dictionary_lowercase = {}
 
-    # 공식 마인크래프트 번역 파일에서 사전 구축
-    try:
-        if source_lang_code == "en_us":  # 원본 언어가 영어일 때만 공식 사전 구축
-            # 영어-한국어 매핑 생성
-            for key, en_value in OFFICIAL_EN_LANG_FILE.items():
-                if key in OFFICIAL_KO_LANG_FILE:
-                    ko_value = OFFICIAL_KO_LANG_FILE[key]
-                    if en_value and ko_value:  # 빈 값이 아닌 경우에만 추가
-                        add_to_dictionary(
-                            en_value,
-                            ko_value,
-                            translation_dictionary,
-                            translation_dictionary_lowercase,
-                        )
-
-            st.sidebar.success(
-                f"공식 마인크래프트 번역 사전 로드 완료: {len(translation_dictionary)}개 항목"
-            )
-        else:
-            st.sidebar.warning(
-                f"원본 언어 '{source_lang_code}'에 대한 공식 번역 파일이 없어 공식 사전 구축을 건너뛰니다."
-            )
-            logger.warning(
-                f"원본 언어 '{source_lang_code}'에 대한 공식 번역 파일이 없어 공식 사전 구축을 건너뛰니다."
-            )
-
-    except Exception as e:
-        st.sidebar.warning(f"공식 번역 파일 로드 오류: {str(e)}")
-        logger.warning(f"공식 번역 파일 로드 오류: {str(e)}")
-
-    if custom_dict_file is not None:
-        try:
-            translation_dictionary = json.load(custom_dict_file)
-            translation_dictionary_lowercase = {
-                k.lower(): k for k, v in translation_dictionary.items()
-            }
-            st.sidebar.success(
-                f"커스텀 사전 로드 완료: {len(translation_dictionary)}개 항목"
-            )
-        except Exception:
-            st.sidebar.error(f"사전 로드 오류:\n\n{traceback.format_exc()}")
-            logger.error(traceback.format_exc())
+    target_lang_code = LANG_CODE
+    # 사전 초기화 및 로드 (streamlit_utils 사용)
+    translation_dictionary, translation_dictionary_lowercase = (
+        initialize_translation_dictionary(source_lang_code, target_lang_code)
+    )
+    translation_dictionary, translation_dictionary_lowercase = load_custom_dictionary(
+        custom_dict_file, translation_dictionary, translation_dictionary_lowercase
+    )
 
     # 번역 실행 버튼
     if st.button("번역 시작"):
-        if not api_keys:
+        if not api_keys and model_provider != "G4F":
             st.error("API 키를 입력해주세요.")
             return
 
@@ -989,40 +712,28 @@ def main():
                         f"총 {total_api_keys}개의 API 키를 순차적으로 사용합니다."
                     )
 
-                    try:
-                        # Rate Limiter 설정
-                        rate_limiter = None
-                        if use_rate_limiter:
-                            # RPM을 RPS(초당 요청 수)로 변환
-                            rps = rpm / 60.0
-                            rate_limiter = InMemoryRateLimiter(
-                                requests_per_second=rps,
-                                check_every_n_seconds=0.1,
-                                max_bucket_size=10,
-                            )
-                            status_text.text(f"속도 제한: {rpm} RPM ({rps:.2f} RPS)")
-                            logger.info(f"속도 제한 설정: {rpm} RPM ({rps:.2f} RPS)")
-                        if use_request_delay:
-                            delay_manager = DelayManager(delay=request_delay)
-                        else:
-                            delay_manager = DelayManager(delay=0)
-                        # 현재 API 키 가져오기
-                        st.session_state.api_key_index = (
-                            st.session_state.api_key_index + 1
-                        ) % total_api_keys
+                    # Rate Limiter 및 Delay Manager 생성 (streamlit_utils 사용)
+                    rate_limiter = get_rate_limiter(
+                        use_rate_limiter and model_provider != "G4F", rpm
+                    )
+                    if rate_limiter:
+                        logger.info(f"속도 제한 설정: {rpm} RPM ({rpm / 60.0:.2f} RPS)")
 
-                        logger.info(
-                            f"API 키 사용 중: {st.session_state.api_key_index}/{total_api_keys}"
-                        )
+                    g4f_delay = 1.0 if model_provider == "G4F" else 0
+                    effective_delay = (
+                        request_delay
+                        if use_request_delay and model_provider != "G4F"
+                        else g4f_delay
+                    )
+                    delay_manager = get_delay_manager(
+                        effective_delay > 0, effective_delay
+                    )
+                    if effective_delay > 0:
+                        logger.info(f"요청 딜레이 설정: {effective_delay:.1f}초")
 
-                    except RuntimeError as e:
-                        logger.error(f"모델 초기화 중 오류 발생: {e}")
-                        st.error(
-                            f"모델 초기화 사용 중 오류가 발생했습니다.\n\n오류 메시지: {e}".replace(
-                                "\n", "  \n"
-                            )
-                        )
-                        return
+                    st.session_state.api_key_index = (
+                        st.session_state.api_key_index + 1
+                    ) % total_api_keys
 
                     # 출력 디렉토리 생성 (임시 디렉토리 내부에)
                     os.makedirs(output_path, exist_ok=True)

@@ -75,5 +75,13 @@ def get_translator(
             temperature=temperature,
             rate_limiter=rate_limiter,
         )
+    elif provider == "g4f":
+        return ChatOpenAI(
+            model=model_name,
+            temperature=temperature,
+            rate_limiter=rate_limiter,
+            openai_api_base="http://localhost:1337/v1",
+            openai_api_key="g4f-api-key",
+        )
     else:
         raise ValueError(f"지원하지 않는 모델 제공자입니다: {provider}")
