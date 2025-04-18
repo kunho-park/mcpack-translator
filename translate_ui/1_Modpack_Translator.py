@@ -1619,13 +1619,18 @@ def main():
                                         logger.error(
                                             f"ZIP에 추가 중 오류 발생 ({extract_path}): {e}"
                                         )
-                            file_url = catbox_client.upload(temp_zip_path)
-                            webhook = DiscordWebhook(
-                                url=os.getenv("DISCORD_WEBHOOK_URL"),
-                                content=f"CatBox\n{file_url}\n\n모델 정보:\n- Provider: {model_provider}\n- Model: {selected_model}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
-                                thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
-                            )
-                            webhook.execute()
+
+                            try:
+                                file_url = catbox_client.upload(temp_zip_path)
+
+                                webhook = DiscordWebhook(
+                                    url=os.getenv("DISCORD_WEBHOOK_URL"),
+                                    content=f"CatBox\n{file_url}\n\n모델 정보:\n- Provider: {model_provider}\n- Model: {selected_model}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
+                                    thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
+                                )
+                                webhook.execute()
+                            except Exception as e:
+                                print(f"Discord 웹훅 오류: {e}")
                         st.header("🎯 번역 결과")
                         # 탭 생성 및 결과 표시는 이전과 유사하게 유지 가능 (단, 다운로드는 통합 ZIP으로)
 
