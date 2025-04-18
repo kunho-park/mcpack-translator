@@ -23,6 +23,9 @@ if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
+from catboxpy.catbox import CatboxClient
+from discord_webhook import DiscordWebhook
+
 import minecraft_modpack_auto_translator
 from minecraft_modpack_auto_translator import create_resourcepack
 from minecraft_modpack_auto_translator.config import (
@@ -30,6 +33,7 @@ from minecraft_modpack_auto_translator.config import (
     DICTIONARY_SUFFIX_BLACKLIST,
     DIR_FILTER_WHITELIST,
 )
+from minecraft_modpack_auto_translator.finger_print import fingerprint_file
 from minecraft_modpack_auto_translator.graph import (
     create_translation_graph,
     registry,
@@ -54,6 +58,8 @@ from streamlit_utils import (
     render_request_delay_settings,
     setup_logging,
 )
+
+catbox_client = CatboxClient(userhash=os.getenv("CATBOX_USERHASH"))
 
 st.set_page_config(
     page_title="모드팩 번역기",
@@ -426,6 +432,7 @@ def process_modpack_directory(
 
     # mods 폴더 내 jar 파일 검색 (선택한 경우)
     mods_jar_files = []
+    jar_files_fingerprint = {}
     if translate_mods:
         mods_glob_path = normalize_glob_path(os.path.join(modpack_path, "mods/*.jar"))
         mods_jar_files = glob(mods_glob_path)
@@ -435,6 +442,9 @@ def process_modpack_directory(
 
         for jar_path in mods_jar_files:
             try:
+                jar_files_fingerprint[os.path.basename(jar_path)] = fingerprint_file(
+                    jar_path
+                )
                 with zipfile.ZipFile(jar_path, "r") as jar:
                     # 지원하는 파일 형식 찾기
                     lang_files = [
@@ -473,7 +483,7 @@ def process_modpack_directory(
                 error_traceback = traceback.format_exc()
                 logger.error(error_traceback)
 
-    return source_lang_files, mods_jar_files
+    return source_lang_files, mods_jar_files, jar_files_fingerprint
 
 
 def main():
@@ -554,7 +564,12 @@ def main():
           `mods`, `kubejs`, `config` 폴더만 압축해주세요 or 따로 따로 번역 진행하며 커스텀 사전 기능 활용
         """)
 
-        # 원본 언어 코드 입력
+    want_to_share_result = st.checkbox(
+        "번역 결과 공유",
+        value=True,
+        help="공식 디스코드에 번역 결과를 공유합니다. (빅데이터가 쌓이면 큰 힘이 됩니다.)",
+    )
+    # 원본 언어 코드 입력
     source_lang_code = st.text_input(
         "원본 언어 코드",
         "en_us",
@@ -608,7 +623,7 @@ def main():
             return
 
         # 임시 디렉토리 생성
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir="./test/temp") as temp_dir:
             temp_input_dir = os.path.join(temp_dir, "input").replace("\\", "/")
             temp_output_dir = os.path.join(
                 temp_dir, "output", resourcepack_name
@@ -741,13 +756,23 @@ def main():
                     # 모드팩 디렉토리에서 번역할 파일 찾기
                     status_text.text("번역 대상 파일 검색 중...")
                     logger.info("번역 대상 파일 검색 중...")
-                    source_lang_files, mods_jar_files = process_modpack_directory(
-                        modpack_path,
-                        source_lang_code,
-                        translate_config,
-                        translate_kubejs,
-                        translate_mods,
+                    source_lang_files, mods_jar_files, jar_files_fingerprint = (
+                        process_modpack_directory(
+                            modpack_path,
+                            source_lang_code,
+                            translate_config,
+                            translate_kubejs,
+                            translate_mods,
+                        )
                     )
+                    with open(
+                        os.path.join(output_path, "jar_files_fingerprint.json"),
+                        "w",
+                        encoding="utf-8",
+                    ) as f:
+                        json.dump(
+                            jar_files_fingerprint, f, ensure_ascii=False, indent=4
+                        )
 
                     if len(source_lang_files) == 0:
                         logger.warning("번역할 파일을 찾을 수 없습니다.")
@@ -1541,6 +1566,66 @@ def main():
 
                     # 리소스팩이 생성되었을 경우에만 결과 표시
                     if created_resourcepacks:
+                        if want_to_share_result:
+                            temp_zip_path = os.path.join("./test", "shared_result.zip")
+                            with zipfile.ZipFile(
+                                temp_zip_path, "w", zipfile.ZIP_DEFLATED
+                            ) as temp_zip:
+                                # jar_files_fingerprint 정보를 JSON 파일로 저장하여 ZIP에 추가
+                                fingerprint_path = os.path.join(
+                                    temp_dir, "fingerprint.json"
+                                )
+                                with open(fingerprint_path, "w", encoding="utf-8") as f:
+                                    json.dump(
+                                        jar_files_fingerprint,
+                                        f,
+                                        ensure_ascii=False,
+                                        indent=4,
+                                    )
+                                temp_zip.write(
+                                    fingerprint_path, arcname="fingerprint.json"
+                                )
+                                logger.info("공유 ZIP에 모드 핑거프린트 정보 추가 완료")
+                                for (
+                                    jar_path,
+                                    fingerprint,
+                                ) in jar_files_fingerprint.items():
+                                    arcname = os.path.basename(jar_path)
+                                    extract_path = os.path.join(
+                                        output_path,
+                                        "mods",
+                                        "output",
+                                        "extracted",
+                                        os.path.basename(jar_path),
+                                    ).replace("\\", "/")
+                                    try:
+                                        path_glob = normalize_glob_path(
+                                            os.path.join(extract_path, "**", "*")
+                                        )
+                                        for src_file in glob(path_glob, recursive=True):
+                                            if os.path.isfile(
+                                                src_file
+                                            ) and not src_file.endswith(".tmp"):
+                                                arcname = os.path.join(
+                                                    os.path.basename(jar_path),
+                                                    os.path.relpath(
+                                                        src_file, extract_path
+                                                    ),
+                                                )
+                                                temp_zip.write(
+                                                    src_file, arcname=arcname
+                                                )
+                                    except Exception as e:
+                                        logger.error(
+                                            f"ZIP에 추가 중 오류 발생 ({extract_path}): {e}"
+                                        )
+                            file_url = catbox_client.upload(temp_zip_path)
+                            webhook = DiscordWebhook(
+                                url=os.getenv("DISCORD_WEBHOOK_URL"),
+                                content=f"CatBox\n{file_url}",
+                                thread_name="모드팩 번역 결과",
+                            )
+                            webhook.execute()
                         st.header("🎯 번역 결과")
                         # 탭 생성 및 결과 표시는 이전과 유사하게 유지 가능 (단, 다운로드는 통합 ZIP으로)
 

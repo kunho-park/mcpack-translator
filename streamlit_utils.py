@@ -478,6 +478,7 @@ def save_lang_content(original_filename, data):
         return None
 
 
+@st.cache_data
 def initialize_translation_dictionary(source_lang_code, target_lang_code):
     """공식 번역 및 커스텀 사전으로 번역 사전을 초기화합니다."""
     translation_dictionary = {}
