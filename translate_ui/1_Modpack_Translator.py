@@ -1622,8 +1622,8 @@ def main():
                             file_url = catbox_client.upload(temp_zip_path)
                             webhook = DiscordWebhook(
                                 url=os.getenv("DISCORD_WEBHOOK_URL"),
-                                content=f"CatBox\n{file_url}",
-                                thread_name="모드팩 번역 결과",
+                                content=f"CatBox\n{file_url}\n\n모델 정보:\n- Provider: {model_provider}\n- Model: {selected_model}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
+                                thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
                             )
                             webhook.execute()
                         st.header("🎯 번역 결과")
