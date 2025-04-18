@@ -148,7 +148,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                         "context": context,
                     }
                 )
-                return state["restored_text"]
+                return state["restored_text"], state["has_error"]
             elif isinstance(value, list):
                 if sum(not isinstance(item, str) for item in value) == 0:
                     translated = await translate_value_async(
@@ -289,7 +289,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
                 }
             )
             value_dict["text"] = state["restored_text"]
-            return json.dumps(value_dict)
+            return json.dumps(value_dict), state["has_error"]
         else:
             state = await translation_graph.ainvoke(
                 {
@@ -299,4 +299,4 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
                     "context": context,
                 }
             )
-            return state["restored_text"]
+            return state["restored_text"], state["has_error"]

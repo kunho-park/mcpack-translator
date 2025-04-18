@@ -1,6 +1,7 @@
 # app/Dockerfile
 
-FROM python:3.11-slim
+FROM python:3.12-slim-bookworm
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -13,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/kunho-park/mcpack-translator .
 
-RUN pip3 install -r requirements.txt
+RUN uv sync
 
 EXPOSE 8501
 

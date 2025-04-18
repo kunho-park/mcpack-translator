@@ -142,6 +142,7 @@ async def analyze_text(state):
         "placeholder_map": placeholder_map,
         "extracted_entities": [],
         "context": context,
+        "has_error": False,
     }
 
 
@@ -474,7 +475,8 @@ async def translate_text(state):
         except RuntimeError as e:
             # RuntimeError는 번역을 계속할 수 없는 심각한 오류이므로 바로 예외 던지기
             logger.error(f"심각한 오류 발생으로 번역 중단: {e}")
-            raise
+            state["has_error"] = True
+            return {**state, "translated_text": translated_text}
 
     # 모든 시도 후에도 플레이스홀더 문제가 있다면 경고 로그 남김
     missing_placeholders = []
@@ -495,24 +497,24 @@ async def restore_formats(state):
         state["translated_text"],
         state["placeholder_map"],
     )
-
     return {**state, "restored_text": restored_text}
 
 
 def create_translation_graph():
     # 상태 스키마 정의
-    from typing import NotRequired, TypedDict
+    from typing import TypedDict
 
     class TranslationState(TypedDict):
         text: str
         replaced_text: str
         custom_dictionary_dict: dict
         placeholder_map: dict
-        dictionary: NotRequired[list]
-        translated_text: NotRequired[str]
-        llm: NotRequired[BaseChatModel]
-        restored_text: NotRequired[str]
-        context: NotRequired[TranslationContext]
+        has_error: bool
+        dictionary: list
+        translated_text: str
+        llm: BaseChatModel
+        restored_text: str
+        context: TranslationContext
 
     # 워크플로우 그래프 정의
     workflow = StateGraph(TranslationState)
@@ -551,7 +553,7 @@ async def translate_item(
         if delay_manager:
             await delay_manager.wait_before_request()
 
-        translated_value = await registry.aprocess_item(
+        translated_value, has_error = await registry.aprocess_item(
             input_path, key, value, context, llm
         )
 
@@ -561,14 +563,14 @@ async def translate_item(
 
         if progress_callback:
             await progress_callback()
-        return key, translated_value
+        return key, translated_value, has_error
     except RuntimeError as e:
         # API 할당량 초과나 심각한 LLM 오류 발생 시
         logger.error(f"LLM API 오류로 번역이 중단되었습니다: {e}")
         raise
     except Exception as e:
         logger.error(f"항목 '{key}' 번역 중 오류 발생: {e}")
-        logger.debug(traceback.format_exc())
+        logger.info(traceback.format_exc())
         # 일반 오류는 원본 값 반환
         return key, value
 
@@ -664,7 +666,7 @@ async def translate_json_file(
         while not queue.empty():
             try:
                 key, value = await queue.get()
-                key, translated_value = await translate_item(
+                key, translated_value, has_error = await translate_item(
                     input_path,
                     key,
                     value,
@@ -673,8 +675,9 @@ async def translate_json_file(
                     progress_callback,
                     delay_manager,
                 )
-                translated_data[key] = translated_value
-                queue.task_done()
+                if not has_error:
+                    translated_data[key] = translated_value
+                    queue.task_done()
 
                 # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
                 current_dict_size = len(context.get_dictionary())

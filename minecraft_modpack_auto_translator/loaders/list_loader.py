@@ -104,7 +104,7 @@ class ListLoader(BaseLoader):
 
                 translated_list.append(state["restored_text"])
 
-            return translated_list
+            return translated_list, state["has_error"]
         except Exception as e:
             self.logger.error(f"리스트 비동기 번역 중 오류 발생: {e}")
             return value

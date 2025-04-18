@@ -93,6 +93,6 @@ class StringLoader(BaseLoader):
                 }
             )
 
-            return state["restored_text"]
+            return state["restored_text"], state["has_error"]
         except Exception as e:
             raise e

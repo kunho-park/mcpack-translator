@@ -98,4 +98,4 @@ class PatchouliBooksLoader(BaseLoader):
                             }
                         )
                         page[k] = state["restored_text"]
-        return value
+        return value, state["has_error"]
