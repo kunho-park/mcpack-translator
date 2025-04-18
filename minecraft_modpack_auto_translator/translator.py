@@ -69,37 +69,39 @@ class G4FLLM(LLM):
         run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        client = AsyncClient()
-        create_kwargs = {} if self.create_kwargs is None else self.create_kwargs.copy()
-        create_kwargs["model"] = self.model
-        if self.provider is not None:
-            create_kwargs["provider"] = self.provider
-        if self.auth is not None:
-            create_kwargs["auth"] = self.auth
+        with AsyncClient() as client:
+            create_kwargs = (
+                {} if self.create_kwargs is None else self.create_kwargs.copy()
+            )
+            create_kwargs["model"] = self.model
+            if self.provider is not None:
+                create_kwargs["provider"] = self.provider
+            if self.auth is not None:
+                create_kwargs["auth"] = self.auth
 
-        create_kwargs.pop("stream", None)
+            create_kwargs.pop("stream", None)
 
-        for i in range(MAX_TRIES):
-            try:
-                response = await client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    **create_kwargs,
-                )
-                text = response.choices[0].message.content
+            for i in range(MAX_TRIES):
+                try:
+                    response = await client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        **create_kwargs,
+                    )
+                    text = response.choices[0].message.content
 
-                if stop is not None:
-                    text = enforce_stop_tokens(text or "", stop)
-                if text:
-                    if run_manager:
-                        await run_manager.on_llm_end(response)
-                    return text
-                print(f"Empty response, trying {i + 1} of {MAX_TRIES}")
-            except Exception as e:
-                print(f"Error in G4FLLM._acall: {e}, trying {i + 1} of {MAX_TRIES}")
+                    if stop is not None:
+                        text = enforce_stop_tokens(text or "", stop)
+                    if text:
+                        if run_manager:
+                            await run_manager.on_llm_end(response)
+                        return text
+                    print(f"Empty response, trying {i + 1} of {MAX_TRIES}")
+                except Exception as e:
+                    print(f"Error in G4FLLM._acall: {e}, trying {i + 1} of {MAX_TRIES}")
 
-        if run_manager:
-            pass
-        return ""
+            if run_manager:
+                pass
+            return ""
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
