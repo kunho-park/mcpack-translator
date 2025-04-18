@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, List, Mapping, Optional, Union
 
 import g4f.models
@@ -37,30 +38,37 @@ class G4FLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        client = AsyncClient()
-        create_kwargs = {} if self.create_kwargs is None else self.create_kwargs.copy()
-        create_kwargs["model"] = self.model
-        if self.provider is not None:
-            create_kwargs["provider"] = self.provider
-        if self.auth is not None:
-            create_kwargs["auth"] = self.auth
-
-        for i in range(MAX_TRIES):
-            try:
-                response = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    **create_kwargs,
+        async def _run():
+            async with AsyncClient() as client:
+                create_kwargs = (
+                    {} if self.create_kwargs is None else self.create_kwargs.copy()
                 )
-                text = response.choices[0].message.content
+                create_kwargs["model"] = self.model
+                if self.provider is not None:
+                    create_kwargs["provider"] = self.provider
+                if self.auth is not None:
+                    create_kwargs["auth"] = self.auth
 
-                if stop is not None:
-                    text = enforce_stop_tokens(text, stop)
-                if text:
-                    return text
-                print(f"Empty response, trying {i + 1} of {MAX_TRIES}")
-            except Exception as e:
-                print(f"Error in G4FLLM._call: {e}, trying {i + 1} of {MAX_TRIES}")
-        return ""
+                for i in range(MAX_TRIES):
+                    try:
+                        response = await client.chat.completions.create(
+                            messages=[{"role": "user", "content": prompt}],
+                            **create_kwargs,
+                        )
+                        text = response.choices[0].message.content
+
+                        if stop is not None:
+                            text = enforce_stop_tokens(text or "", stop)
+                        if text:
+                            return text
+                        print(f"Empty response, trying {i + 1} of {MAX_TRIES}")
+                    except Exception as e:
+                        print(
+                            f"Error in G4FLLM._call (async wrapper): {e}, trying {i + 1} of {MAX_TRIES}"
+                        )
+                return ""
+
+        return asyncio.run(_run())
 
     async def _acall(
         self,
