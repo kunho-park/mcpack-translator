@@ -623,7 +623,7 @@ def main():
             return
 
         # 임시 디렉토리 생성
-        with tempfile.TemporaryDirectory(dir="./test/temp") as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             temp_input_dir = os.path.join(temp_dir, "input").replace("\\", "/")
             temp_output_dir = os.path.join(
                 temp_dir, "output", resourcepack_name
@@ -1567,7 +1567,7 @@ def main():
                     # 리소스팩이 생성되었을 경우에만 결과 표시
                     if created_resourcepacks:
                         if want_to_share_result:
-                            temp_zip_path = os.path.join("./test", "shared_result.zip")
+                            temp_zip_path = os.path.join(temp_dir, "shared_result.zip")
                             with zipfile.ZipFile(
                                 temp_zip_path, "w", zipfile.ZIP_DEFLATED
                             ) as temp_zip:
