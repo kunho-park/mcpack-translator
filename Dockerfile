@@ -20,4 +20,4 @@ EXPOSE 7860
 
 ENV GRADIO_SERVER_NAME="0.0.0.0"
 
-ENTRYPOINT ["python", "gradio_app.py"]
+ENTRYPOINT ["uv", "run", "python", "gradio_app.py"]
