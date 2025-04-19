@@ -44,7 +44,7 @@ def main():
         server_port=7860,
         share=False,
         show_api=False,
-        max_file_size=1024 * 1024 * 1024 * int(os.getenv("MAX_FILE_SIZE_GB")),
+        max_file_size=1024 * 1024 * 1024 * int(os.getenv("MAX_FILE_SIZE_GB", 100)),
     )
 
 
