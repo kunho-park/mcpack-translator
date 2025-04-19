@@ -45,6 +45,12 @@ def main():
     print(f"API 표시 여부: {os.getenv('SHOW_API', False)}")
     print(f"최대 파일 크기: {os.getenv('MAX_FILE_SIZE_GB', 100)}GB")
 
+    print("=" * 20)
+    print(
+        f"\n웹 브라우저에서 https://localhost:{os.getenv('SERVER_PORT', 7860)} 로 접속하세요."
+    )
+    print("=" * 20)
+
     demo.launch(
         server_name=os.getenv("SERVER_NAME", "0.0.0.0"),
         server_port=int(os.getenv("SERVER_PORT", 7860)),
