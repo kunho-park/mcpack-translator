@@ -39,11 +39,18 @@ def main():
             with gr.TabItem("⚙️ 모델 설정"):
                 create_model_settings_ui(config_state)
 
+    print("Gradio 서버 시작")
+    print(f"서버 이름: {os.getenv('SERVER_NAME', '0.0.0.0')}")
+    print(f"서버 포트: {os.getenv('SERVER_PORT', 7860)}")
+    print(f"공유 여부: {os.getenv('SHARE', False)}")
+    print(f"API 표시 여부: {os.getenv('SHOW_API', False)}")
+    print(f"최대 파일 크기: {os.getenv('MAX_FILE_SIZE_GB', 100)}GB")
+
     demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        show_api=False,
+        server_name=os.getenv("SERVER_NAME", "0.0.0.0"),
+        server_port=int(os.getenv("SERVER_PORT", 7860)),
+        share=os.getenv("SHARE", False),
+        show_api=os.getenv("SHOW_API", False),
         max_file_size=1024 * 1024 * 1024 * int(os.getenv("MAX_FILE_SIZE_GB", 100)),
     )
 
