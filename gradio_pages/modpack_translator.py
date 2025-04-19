@@ -238,7 +238,7 @@ def create_modpack_translator_ui(config_state):
                             "디스코드로의 공유를 원하신다면 https://mc-pack-translator.2odk.com 에서 번역을 해주세요."
                         )
                 except Exception as e:
-                    add_log(f"공유 중 오류: {e}")
+                    print(f"공유 중 오류: {e}")
             return "Waiting for starting...", gr.update(
                 value=final_zip_path, visible=True
             )
