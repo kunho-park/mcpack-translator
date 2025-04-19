@@ -15,7 +15,6 @@ load_dotenv()
 def main():
     with gr.Blocks() as demo:
         # 상태 저장용 변수
-
         os.makedirs("./temp/logs", exist_ok=True)
         config_state = gr.State(
             {
