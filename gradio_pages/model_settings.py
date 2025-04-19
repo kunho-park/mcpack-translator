@@ -88,12 +88,6 @@ def create_model_settings_ui(config_state):
                     "request_delay": float(request_delay),
                 }
             )
-            # 기본값 설정 (추후 로딩 시 사용될 수 있음)
-            if "log_file_path" not in config:
-                config["log_file_path"] = tempfile.NamedTemporaryFile(
-                    delete=False, prefix="log_", dir="./temp/logs"
-                ).name
-
             gr.Success("설정이 저장되었습니다.")
             return config
 
@@ -172,6 +166,12 @@ def create_model_settings_ui(config_state):
             elif "api_key" in data:
                 api_keys_str = data["api_key"]
             # config_state 및 UI 컴포넌트 업데이트
+            data["log_file_path"] = tempfile.NamedTemporaryFile(
+                delete=False,
+                prefix="log_",
+                dir="./temp/logs",
+                suffix=".log",
+            ).name
             return (
                 data,
                 data.get("provider"),

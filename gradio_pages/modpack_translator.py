@@ -211,7 +211,7 @@ def create_modpack_translator_ui(config_state):
                         share_zf.write(fingerprint_path, arcname="fingerprint.json")
                         for jar_name in jar_fingerprints.keys():
                             extract_path = os.path.join(
-                                input_dir, "extracted", jar_name
+                                input_dir, "mods", "extracted", jar_name
                             )
                             for root, _, share_files in os.walk(extract_path):
                                 for sf in share_files:
