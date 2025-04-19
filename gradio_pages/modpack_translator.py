@@ -48,8 +48,10 @@ def create_modpack_translator_ui(config_state):
             translate_config = gr.Checkbox(label="Config 파일 번역", value=True)
             translate_kubejs = gr.Checkbox(label="KubeJS 파일 번역", value=True)
             translate_mods = gr.Checkbox(label="Mods 파일 번역", value=True)
-            max_workers = gr.Number(label="동시 작업자 수", value=5)
-            file_split_number = gr.Number(label="파일 분할 작업자 수", value=1)
+            max_workers = gr.Number(label="동시 작업자 수", value=5, maximum=10)
+            file_split_number = gr.Number(
+                label="파일 분할 작업자 수", value=1, maximum=5
+            )
             use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
 
             share_results = gr.Checkbox(label="번역 결과 공유 (Discord)", value=True)

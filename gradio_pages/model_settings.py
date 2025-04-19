@@ -90,7 +90,9 @@ def create_model_settings_ui(config_state):
             )
             # 기본값 설정 (추후 로딩 시 사용될 수 있음)
             if "log_file_path" not in config:
-                config["log_file_path"] = "./temp/translation.log"
+                config["log_file_path"] = tempfile.NamedTemporaryFile(
+                    delete=False, prefix="log_", dir="./temp/logs"
+                ).name
 
             gr.Success("설정이 저장되었습니다.")
             return config
