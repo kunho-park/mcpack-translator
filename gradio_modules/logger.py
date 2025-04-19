@@ -18,9 +18,10 @@ class Logger:
             file.truncate(0)
 
     def read_logs(self):
-        # Read the entire content of the log file
-        with open(self.filename, "r") as f:
-            log_content = f.readlines()
+        if not os.path.exists(self.filename):
+            # Read the entire content of the log file
+            with open(self.filename, "r") as f:
+                log_content = f.readlines()
 
-        recent_lines = log_content[-30:]
-        return "".join(recent_lines)
+            recent_lines = log_content[-30:]
+            return "".join(recent_lines)
