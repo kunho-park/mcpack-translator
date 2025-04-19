@@ -1,6 +1,10 @@
+import os
+
+
 class Logger:
     def __init__(self, filepath):
         self.filename = filepath
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
     def write(self, message):
         with open(self.filename, "a") as f:
