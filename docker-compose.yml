@@ -9,4 +9,4 @@ services:
       - .:/app
     environment:
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-    command: streamlit run app.py
+    command: python app.py
