@@ -220,8 +220,10 @@ def create_file_translator_ui(config_state):
         )
 
         def update_log(config):
-            logger_client = Logger(config["log_file_path"])
-            return gr.update(value=logger_client.read_logs())
+            log_file_path = config.get("log_file_path")
+            if log_file_path:
+                logger_client = Logger(log_file_path)
+                return gr.update(value=logger_client.read_logs())
 
         gr.Timer(3).tick(fn=update_log, inputs=[config_state], outputs=log_output)
     return file_tab
