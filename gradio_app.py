@@ -58,7 +58,7 @@ def main():
         share=os.getenv("SHARE", False),
         show_api=os.getenv("SHOW_API", False),
         max_file_size=1024 * 1024 * 1024 * int(os.getenv("MAX_FILE_SIZE_GB", 100)),
-        show_error=True,
+        root_path="/gradio",
     )
 
 
