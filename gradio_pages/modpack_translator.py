@@ -51,13 +51,7 @@ def create_modpack_translator_ui(config_state):
             max_workers = gr.Number(label="동시 작업자 수", value=5)
             file_split_number = gr.Number(label="파일 분할 작업자 수", value=1)
             use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
-            update_interval = gr.Slider(
-                label="UI 업데이트 간격(초)",
-                minimum=1.0,
-                maximum=10.0,
-                step=0.5,
-                value=3.0,
-            )
+
             share_results = gr.Checkbox(label="번역 결과 공유 (Discord)", value=True)
 
         translate_btn = gr.Button("번역 시작")
@@ -85,7 +79,6 @@ def create_modpack_translator_ui(config_state):
             max_workers,
             file_split_number,
             use_random_order,
-            update_interval,
             share_results,
             config,
             pr=pr,
@@ -256,7 +249,6 @@ def create_modpack_translator_ui(config_state):
                 max_workers,
                 file_split_number,
                 use_random_order,
-                update_interval,
                 share_results,
                 config_state,
             ],
@@ -267,7 +259,5 @@ def create_modpack_translator_ui(config_state):
             logger_client = Logger(config["log_file_path"])
             return gr.update(value=logger_client.read_logs())
 
-        gr.Timer(update_interval).tick(
-            fn=update_log, inputs=[config_state], outputs=log_output
-        )
+        gr.Timer(3).tick(fn=update_log, inputs=[config_state], outputs=log_output)
     return tab
