@@ -42,4 +42,4 @@ class DefaultLoader(BaseLoader):
         비동기적으로 그대로 반환합니다.
         """
         self.logger.debug(f"비동기 기본 로더가 처리: {input_path} = {value}")
-        return value
+        return value, False

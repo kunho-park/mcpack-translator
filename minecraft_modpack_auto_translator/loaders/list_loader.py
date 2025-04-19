@@ -107,4 +107,4 @@ class ListLoader(BaseLoader):
             return translated_list, state["has_error"]
         except Exception as e:
             self.logger.error(f"리스트 비동기 번역 중 오류 발생: {e}")
-            return value
+            return value, True

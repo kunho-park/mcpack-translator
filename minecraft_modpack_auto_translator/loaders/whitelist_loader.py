@@ -60,4 +60,4 @@ class WhiteListLoader(BaseLoader):
         딕셔너리 값을 비동기적으로 처리합니다.
         현재는 그대로 반환합니다.
         """
-        return value
+        return value, False

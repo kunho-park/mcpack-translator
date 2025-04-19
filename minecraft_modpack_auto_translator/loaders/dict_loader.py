@@ -64,4 +64,4 @@ class DictLoader(BaseLoader):
         self.logger.info(
             f"이 형식의 딕셔너리 번역은 현재 지원되지 않습니다. (비동기 처리: {input_path})"
         )
-        return value
+        return value, False

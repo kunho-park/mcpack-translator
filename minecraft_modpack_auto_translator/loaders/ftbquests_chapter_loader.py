@@ -151,18 +151,18 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                 return state["restored_text"], state["has_error"]
             elif isinstance(value, list):
                 if sum(not isinstance(item, str) for item in value) == 0:
-                    translated = await translate_value_async(
+                    translated, has_error = await translate_value_async(
                         "\n".join(value),
                         translation_graph,
                         custom_dictionary_dict,
                         llm,
                         context,
                     )
-                    return translated.split("\n")
+                    return translated.split("\n"), has_error
                 else:
                     results = []
                     for item in value:
-                        translated_item = await translate_value_async(
+                        translated_item, has_error = await translate_value_async(
                             item,
                             translation_graph,
                             custom_dictionary_dict,
@@ -170,33 +170,35 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                             context,
                         )
                         results.append(translated_item)
-                    return results
+                    return results, has_error
             elif isinstance(value, dict):
                 for k in value.keys():
                     if k in self.json_key_white_list:
-                        value[k] = await translate_value_async(
+                        value[k], has_error = await translate_value_async(
                             value[k],
                             translation_graph,
                             custom_dictionary_dict,
                             llm,
                             context,
                         )
-                return value
+                return value, has_error
             else:
-                return value
+                return value, False
 
+        has_error_total = False
         for quest in value:
             if isinstance(quest, dict):
                 for k in quest.keys():
                     if k in self.json_key_white_list:
-                        quest[k] = await translate_value_async(
+                        quest[k], has_error = await translate_value_async(
                             quest[k],
                             translation_graph,
                             custom_dictionary_dict,
                             llm,
                             context,
                         )
-        return value
+                        has_error_total = has_error_total or has_error
+        return value, has_error_total
 
 
 class FTBQuestsChapterTitleLoader(BaseLoader):

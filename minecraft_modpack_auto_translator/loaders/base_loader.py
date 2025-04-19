@@ -65,4 +65,4 @@ class BaseLoader(ABC):
         Returns:
             처리된 값
         """
-        return self.process(input_path, key, value, context)
+        return self.process(input_path, key, value, context), False

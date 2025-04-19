@@ -22,7 +22,7 @@ client/
 backup/
 database/
 test/
-
+temp/
 
 *.log
 *.bat

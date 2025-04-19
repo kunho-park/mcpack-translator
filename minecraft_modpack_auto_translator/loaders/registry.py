@@ -84,4 +84,4 @@ class LoaderRegistry:
         self.logger.debug(
             f"'{input_path}'의 '{key}'에 대한 적절한 비동기 로더를 찾을 수 없습니다."
         )
-        return value
+        return value, False

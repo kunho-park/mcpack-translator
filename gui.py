@@ -324,43 +324,19 @@ def build_dictionary_from_jar(
     )
 
 
-# 경로 특수 문자 처리 및 정규화
 def normalize_glob_path(path):
-    """
-    glob 패턴에서 사용할 경로를 정규화합니다.
-    경로 구분자를 통일하고 특수 문자가 있는 부분을 처리합니다.
-    """
-    # 경로 구분자 통일 (백슬래시 -> 슬래시)
-    normalized_path = path.replace("\\", "/")
+    """glob 패턴에서 사용할 경로를 정규화합니다."""
+    normalized = path.replace("\\", "/")
+    parts = []
 
-    # 와일드카드 있는지 확인
-    has_wildcard = "*" in normalized_path or "?" in normalized_path
-
-    if has_wildcard:
-        # 경로와 패턴 부분 분리
-        if "**" in normalized_path:
-            # 재귀적 패턴 처리
-            path_parts = normalized_path.split("/**", 1)
-            base_dir = path_parts[0]
-            pattern = "/**" + (path_parts[1] if len(path_parts) > 1 else "")
-            # base_dir 부분만 이스케이프
-            return glob_escape(base_dir) + pattern
+    for part in normalized.split("/"):
+        if part.startswith("**"):
+            parts.append(part)
+        elif part.startswith("*"):
+            parts.append(part)
         else:
-            # 일반 와일드카드 패턴
-            last_wildcard_idx = max(
-                normalized_path.rfind("*"), normalized_path.rfind("?")
-            )
-            if last_wildcard_idx != -1:
-                last_dir_sep = normalized_path.rfind("/", 0, last_wildcard_idx)
-                if last_dir_sep != -1:
-                    # 경로의 디렉토리 부분만 이스케이프
-                    return (
-                        glob_escape(normalized_path[:last_dir_sep])
-                        + normalized_path[last_dir_sep:]
-                    )
-
-    # 와일드카드가 없으면 전체 경로 이스케이프
-    return glob_escape(normalized_path)
+            parts.append(glob_escape(part))
+    return "/".join(parts)
 
 
 def process_modpack_directory(
