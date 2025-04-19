@@ -16,8 +16,8 @@ RUN git clone https://github.com/kunho-park/mcpack-translator .
 
 RUN uv sync
 
-EXPOSE 8501
+EXPOSE 7860
 
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+ENV GRADIO_SERVER_NAME="0.0.0.0"
 
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["python", "gradio_app.py"]

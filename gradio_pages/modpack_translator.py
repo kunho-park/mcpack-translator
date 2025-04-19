@@ -221,14 +221,22 @@ def create_modpack_translator_ui(config_state):
                                         )
                                         share_zf.write(src_file, arcname=arc)
 
-                    share_url = catbox_client.upload(share_zip_path)
-                    webhook = DiscordWebhook(
-                        url=os.getenv("DISCORD_WEBHOOK_URL"),
-                        content=f"{share_url}\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
-                        thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
-                    )
-                    webhook.execute()
-                    add_log("공유 링크 전송됨")
+                    if os.getenv("DISCORD_WEBHOOK_URL"):
+                        share_url = catbox_client.upload(share_zip_path)
+                        webhook = DiscordWebhook(
+                            url=os.getenv("DISCORD_WEBHOOK_URL"),
+                            content=f"{share_url}\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
+                            thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
+                        )
+                        webhook.execute()
+                        add_log("공유 링크 전송됨")
+                    else:
+                        add_log(
+                            "디스코드로의 공유를 원하신다면 https://mc-pack-translator.2odk.com 에서 번역을 해주세요."
+                        )
+                        gr.Info(
+                            "디스코드로의 공유를 원하신다면 https://mc-pack-translator.2odk.com 에서 번역을 해주세요."
+                        )
                 except Exception as e:
                     add_log(f"공유 중 오류: {e}")
             return "Waiting for starting...", gr.update(
