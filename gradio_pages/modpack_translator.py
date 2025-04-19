@@ -222,13 +222,32 @@ def create_modpack_translator_ui(config_state):
                                         share_zf.write(src_file, arcname=arc)
 
                     if os.getenv("DISCORD_WEBHOOK_URL"):
-                        share_url = catbox_client.upload(share_zip_path)
-                        webhook = DiscordWebhook(
-                            url=os.getenv("DISCORD_WEBHOOK_URL"),
-                            content=f"{share_url}\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
-                            thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
-                        )
-                        webhook.execute()
+                        file_size = os.path.getsize(share_zip_path) / (
+                            1000 * 1000
+                        )  # MB 단위로 변환
+
+                        if file_size <= 25:
+                            # 25MB 이하 - 디스코드로 직접 전송
+                            with open(share_zip_path, "rb") as f:
+                                webhook = DiscordWebhook(
+                                    url=os.getenv("DISCORD_WEBHOOK_URL"),
+                                    content=f"번역 결과 파일 (직접 업로드)\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
+                                    thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
+                                )
+                                webhook.add_file(
+                                    file=f.read(), filename="translation_results.zip"
+                                )
+                                webhook.execute()
+                        else:
+                            # 25MB 초과 - Catbox 사용
+                            share_url = catbox_client.upload(share_zip_path)
+                            webhook = DiscordWebhook(
+                                url=os.getenv("DISCORD_WEBHOOK_URL"),
+                                content=f"{share_url}\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
+                                thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
+                            )
+                            webhook.execute()
+
                         add_log("공유 링크 전송됨")
                     else:
                         add_log(
