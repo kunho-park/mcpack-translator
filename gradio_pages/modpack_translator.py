@@ -165,7 +165,9 @@ def create_modpack_translator_ui(config_state):
                     max_workers,
                     file_split_number,
                     use_random_order,
-                    custom_dictionary_path=custom_dictionary_json.name,
+                    custom_dictionary_path=custom_dictionary_json.name
+                    if custom_dictionary_json
+                    else None,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
                 )
