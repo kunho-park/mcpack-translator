@@ -41,7 +41,7 @@ def create_modpack_translator_ui(config_state):
                 file_types=[".zip"],
                 value=None,  # 기본값 None으로 설정하여 선택 사항임을 명시
             )
-            custom_dictionary_dict_input = gr.File(
+            custom_dictionary_input = gr.File(
                 label="사전 파일 업로드",
                 file_types=[".json"],
                 value=None,
@@ -79,6 +79,7 @@ def create_modpack_translator_ui(config_state):
             source_lang,
             zip_file,
             existing_translation_zip,
+            custom_dictionary_json,
             build_dict,
             skip_translated,
             resourcepack_name,
@@ -164,7 +165,7 @@ def create_modpack_translator_ui(config_state):
                     max_workers,
                     file_split_number,
                     use_random_order,
-                    custom_dictionary_path=custom_dictionary_dict_input.name,
+                    custom_dictionary_path=custom_dictionary_json.name,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
                 )
@@ -321,6 +322,7 @@ def create_modpack_translator_ui(config_state):
                 source_lang,
                 zip_input,
                 existing_translation_zip_input,
+                custom_dictionary_input,
                 build_dict,
                 skip_translated,
                 resourcepack_name,
