@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import shutil
 import traceback
@@ -16,6 +17,8 @@ from minecraft_modpack_auto_translator.config import (
 )
 from minecraft_modpack_auto_translator.finger_print import fingerprint_file
 from minecraft_modpack_auto_translator.parsers.base_parser import BaseParser
+
+logger = logging.getLogger(__name__)
 
 
 def add_to_dictionary(
@@ -111,6 +114,8 @@ def process_modpack_directory(
                 files.append(f)
             elif ext in supported_exts and src_lower in f.lower():
                 files.append(f)
+
+    logger.info(f"찾은 파일: {len(files)}개 (config 처리)")
     # kubejs
     if translate_kubejs:
         kjs_pattern = normalize_glob_path(os.path.join(modpack_path, "kubejs/**/*.*"))
@@ -121,6 +126,8 @@ def process_modpack_directory(
                 files.append(f)
             elif ext in supported_exts and src_lower in f.lower():
                 files.append(f)
+
+    logger.info(f"찾은 파일: {len(files)}개 (kubejs 처리)")
     # mods
     jar_files = []
     fingerprints = {}
@@ -146,6 +153,8 @@ def process_modpack_directory(
                             shutil.copyfileobj(src, dst)
                         files.append(out)
             jar_files.append(jar)
+
+    logger.info(f"찾은 파일: {len(files)}개 (mods 처리)")
     return files, jar_files, fingerprints
 
 
