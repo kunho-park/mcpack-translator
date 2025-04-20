@@ -75,9 +75,7 @@ def create_modpack_translator_ui(config_state):
                         file_split_number = gr.Number(
                             label="파일 분할 작업자 수", value=1, maximum=5
                         )
-                    use_random_order = gr.Checkbox(
-                        label="랜덤 순서로 번역", value=False
-                    )
+                    use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=True)
 
                     with gr.Row():
                         share_results = gr.Checkbox(
