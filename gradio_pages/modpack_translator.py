@@ -36,6 +36,11 @@ def create_modpack_translator_ui(config_state):
         with gr.Accordion("번역 옵션", open=True):
             source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
             zip_input = gr.File(label="모드팩 ZIP 파일 업로드", file_types=[".zip"])
+            existing_translation_zip_input = gr.File(
+                label="기존 번역본 ZIP (선택)",
+                file_types=[".zip"],
+                value=None,  # 기본값 None으로 설정하여 선택 사항임을 명시
+            )
             build_dict = gr.Checkbox(label="기존 번역에서 사전 자동 구축", value=True)
             skip_translated = gr.Checkbox(label="이미 번역된 파일 건너뛰기", value=True)
             resourcepack_name = gr.Textbox(
@@ -68,6 +73,7 @@ def create_modpack_translator_ui(config_state):
         def start_translation(
             source_lang,
             zip_file,
+            existing_translation_zip,
             build_dict,
             skip_translated,
             resourcepack_name,
@@ -104,6 +110,16 @@ def create_modpack_translator_ui(config_state):
             with zipfile.ZipFile(zip_file.name, "r") as zf:
                 zf.extractall(input_dir)
             add_log("ZIP 압축 해제 완료")
+
+            if existing_translation_zip:
+                try:
+                    with zipfile.ZipFile(existing_translation_zip.name, "r") as zf:
+                        zf.extractall(output_dir)
+                    add_log(f"기존 번역본 ZIP 압축 해제 완료: {output_dir}")
+                except Exception as e:
+                    add_log(f"기존 번역본 ZIP 처리 중 오류 발생: {e}")
+                    existing_translation_dir = None  # 오류 발생 시 None으로 설정
+
             # 모드팩 디렉토리 스캔하여 번역 대상 파일 검색
             files, mods_jars, jar_fingerprints = process_modpack_directory(
                 input_dir,
@@ -141,6 +157,7 @@ def create_modpack_translator_ui(config_state):
                     use_random_order,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
+                    existing_translation_dir=existing_translation_dir,
                 )
             )
             # 진행률 완료
@@ -251,7 +268,7 @@ def create_modpack_translator_ui(config_state):
                                 SERVER_URL,
                                 data=form_data,
                                 files=files_data,
-                                timeout=120,
+                                timeout=300,
                             )  # 타임아웃 추가
 
                         # 서버 응답 확인
@@ -286,6 +303,7 @@ def create_modpack_translator_ui(config_state):
             inputs=[
                 source_lang,
                 zip_input,
+                existing_translation_zip_input,
                 build_dict,
                 skip_translated,
                 resourcepack_name,

@@ -119,16 +119,33 @@ async def run_json_translation(
                 # 이미 번역된 파일 건너뛰기
                 if skip_translated and os.path.exists(out_path):
                     results.append(out_path)
+                    queue.task_done()
+                    if progress_callback:
+                        await progress_callback((completed_count, total))
                     continue
                 # 임시 JSON 파일로 번역
-                temp_json = out_path + ".tmp"
+                temp_json_out = out_path + ".tmp"
+                temp_json_in = in_path + ".converted"
                 llm_instance = await get_llm_instance_for_worker()
+                ext = os.path.splitext(in_path)[1]
+                parser = BaseParser.get_parser_by_extension(ext)
+                with open(in_path, "rb") as f:
+                    content_bytes = f.read()
+                try:
+                    content_str = content_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    content_str = content_bytes.decode("utf-8", errors="ignore")
+                original_data = parser.load(content_str)
+                json_input = json.dumps(original_data, ensure_ascii=False, indent=4)
+
+                with open(temp_json_in, "w", encoding="utf-8") as of:
+                    of.write(json_input)
 
                 if logger_client:
                     logger_client.write(f"번역 시작: {in_path}")
                 await translate_json_file(
-                    input_path=in_path,
-                    output_path=temp_json,
+                    input_path=temp_json_in,
+                    output_path=temp_json_out,
                     custom_dictionary_dict=context.get_dictionary(),
                     llm=llm_instance,
                     max_workers=int(file_split_number),
@@ -137,11 +154,9 @@ async def run_json_translation(
                     delay_manager=delay_manager,
                 )
                 # 변환: JSON -> 원본 포맷
-                with open(temp_json, "r", encoding="utf-8") as jf:
+                with open(temp_json_out, "r", encoding="utf-8") as jf:
                     data = json.load(jf)
                 # 파서로 저장
-                ext = os.path.splitext(in_path)[1]
-                parser = BaseParser.get_parser_by_extension(ext)
                 content = parser.save(data)
                 # 최종 파일 저장
                 with open(out_path, "w", encoding="utf-8") as of:
