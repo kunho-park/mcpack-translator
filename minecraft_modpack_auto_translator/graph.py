@@ -347,7 +347,7 @@ async def translate_text(state):
                 """Custom boolean parser."""
 
                 def parse(self, text: str) -> bool:
-                    cleaned_text = text.replace(r"\&", "&")
+                    cleaned_text = text.replace("\\&", "&")
                     return cleaned_text
 
             class DictionaryEntry(BaseModel):
@@ -472,10 +472,16 @@ async def translate_text(state):
             additional_rules = "\n\n### 중요: json 형식을 지키지 않아 파싱 오류가 발생했습니다.\nformat_instructions을 반드시 지켜서 다시 작성 해주세요."
             logger.error(f"파싱 오류 발생: {e}, 프롬프트에 강조구문 추가 후 다시 시도")
         except RuntimeError as e:
-            # RuntimeError는 번역을 계속할 수 없는 심각한 오류이므로 바로 예외 던지기
-            logger.error(f"심각한 오류 발생으로 번역 중단: {e}")
-            state["has_error"] = True
-            return {**state, "translated_text": translated_text}
+            if "Invalid json output" in str(e):
+                temperature += 0.1
+                additional_rules = "\n\n### 중요: json 형식을 지키지 않아 파싱 오류가 발생했습니다.\nformat_instructions을 반드시 지켜서 다시 작성 해주세요."
+                logger.error(
+                    f"파싱 오류 발생: {e}, 프롬프트에 강조구문 추가 후 다시 시도"
+                )
+            else:
+                logger.error(f"심각한 오류 발생으로 번역 중단: {e}")
+                state["has_error"] = True
+                return {**state, "translated_text": translated_text}
 
     # 모든 시도 후에도 플레이스홀더 문제가 있다면 경고 로그 남김
     missing_placeholders = []
