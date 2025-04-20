@@ -119,14 +119,18 @@ async def run_json_translation(
                 # 이미 번역된 파일 건너뛰기
                 if skip_translated and os.path.exists(out_path):
                     results.append(out_path)
-                    queue.task_done()
+                    if logger_client:
+                        logger_client.write(f"이미 번역된 파일 건너뛰기: {out_path}")
                     if progress_callback:
+                        completed_count += 1
                         await progress_callback((completed_count, total))
+                    queue.task_done()
                     continue
                 # 임시 JSON 파일로 번역
                 temp_json_out = out_path + ".tmp"
                 temp_json_in = in_path + ".converted"
                 llm_instance = await get_llm_instance_for_worker()
+
                 ext = os.path.splitext(in_path)[1]
                 parser = BaseParser.get_parser_by_extension(ext)
                 with open(in_path, "rb") as f:
@@ -163,6 +167,8 @@ async def run_json_translation(
                     of.write(content)
 
                 results.append(out_path)
+                if logger_client:
+                    logger_client.write(f"번역 완료: {out_path}")
                 # 파일 번역 완료 시 진행률 업데이트
                 async with lock:
                     completed_count += 1
