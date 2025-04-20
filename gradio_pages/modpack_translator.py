@@ -120,7 +120,6 @@ def create_modpack_translator_ui(config_state):
                     add_log(f"기존 번역본 ZIP 압축 해제 완료: {output_dir}")
                 except Exception as e:
                     add_log(f"기존 번역본 ZIP 처리 중 오류 발생: {e}")
-                    existing_translation_dir = None  # 오류 발생 시 None으로 설정
 
             # 모드팩 디렉토리 스캔하여 번역 대상 파일 검색
             files, mods_jars, jar_fingerprints = process_modpack_directory(
@@ -159,7 +158,6 @@ def create_modpack_translator_ui(config_state):
                     use_random_order,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
-                    existing_translation_dir=existing_translation_dir,
                 )
             )
             # 진행률 완료
