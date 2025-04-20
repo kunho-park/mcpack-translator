@@ -80,6 +80,14 @@ async def run_json_translation(
             dict_lower,
             source_lang,
         )
+
+        dict_init, dict_lower, _, _ = build_dictionary_from_files(
+            [fp["output"] for fp in file_pairs if os.path.exists(fp["output"])],
+            os.getcwd(),
+            dict_init,
+            dict_lower,
+            source_lang,
+        )
     dict_init, dict_lower = load_custom_dictionary(None, dict_init, dict_lower)
 
     # 워커들이 순환하며 사용할 API 키 이터레이터 생성
