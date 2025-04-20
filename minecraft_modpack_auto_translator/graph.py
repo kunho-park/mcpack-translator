@@ -324,6 +324,7 @@ async def translate_text(state):
     max_attempts = 10
     temperature = 0.1
 
+    is_success = False
     for attempt in range(max_attempts):
         llm.temperature = temperature
         try:
@@ -465,6 +466,7 @@ async def translate_text(state):
                 # 계속 다음 루프로 진행
             else:
                 # 성공적으로 번역 완료
+                is_success = True
                 break
 
         except OutputParserException as e:
@@ -482,7 +484,10 @@ async def translate_text(state):
                 logger.error(f"심각한 오류 발생으로 번역 중단: {e}")
                 state["has_error"] = True
                 return {**state, "translated_text": translated_text}
-
+    if not is_success:
+        logger.error(f"모든 시도 후에도 번역 실패: {translated_text}")
+        state["has_error"] = True
+        return {**state, "translated_text": translated_text}
     # 모든 시도 후에도 플레이스홀더 문제가 있다면 경고 로그 남김
     missing_placeholders = []
     if has_placeholders:
