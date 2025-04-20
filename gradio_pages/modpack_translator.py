@@ -7,9 +7,8 @@ import tempfile
 import zipfile
 
 import gradio as gr
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
-from catboxpy.catbox import CatboxClient
-from discord_webhook import DiscordWebhook
 
 from gradio_modules.dictionary_builder import process_modpack_directory
 from gradio_modules.logger import Logger
@@ -28,9 +27,6 @@ def delete_file_later(file_path):
         print(f"임시 파일 삭제 완료: {file_path}")
     except OSError as e:
         print(f"임시 파일 삭제 오류 ({file_path}): {e}")
-
-
-catbox_client = CatboxClient(userhash=os.getenv("CATBOX_USERHASH"))
 
 
 def create_modpack_translator_ui(config_state):
@@ -223,41 +219,62 @@ def create_modpack_translator_ui(config_state):
                                         )
                                         share_zf.write(src_file, arcname=arc)
 
-                    if os.getenv("DISCORD_WEBHOOK_URL"):
-                        file_size = os.path.getsize(share_zip_path) / (
-                            1000 * 1000
-                        )  # MB 단위로 변환
+                    # 서버 URL 정의 (환경 변수나 설정 파일에서 가져오는 것이 더 좋음)
+                    SERVER_URL = os.getenv(
+                        "UPLOAD_SERVER_URL",
+                        "http://mc-share.2odk.com/upload_to_discord/",
+                    )  # 환경 변수 우선 사용
 
-                        if file_size <= 25:
-                            # 25MB 이하 - 디스코드로 직접 전송
-                            with open(share_zip_path, "rb") as f:
-                                webhook = DiscordWebhook(
-                                    url=os.getenv("DISCORD_WEBHOOK_URL"),
-                                    content=f"번역 결과 파일 (직접 업로드)\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
-                                    thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
-                                )
-                                webhook.add_file(
-                                    file=f.read(), filename="translation_results.zip"
-                                )
-                                webhook.execute()
+                    # 서버로 전송할 데이터 구성
+                    form_data = {
+                        "provider": provider,
+                        "model_name": model_name,
+                        "temperature": str(temperature),  # 숫자는 문자열로 변환
+                        "file_split_number": str(
+                            file_split_number
+                        ),  # 숫자는 문자열로 변환
+                        "resourcepack_name": resourcepack_name,
+                    }
+
+                    try:
+                        add_log(f"결과 파일을 서버 ({SERVER_URL})로 전송 중...")
+                        # 파일을 열어서 전송
+                        with open(share_zip_path, "rb") as f:
+                            files_data = {
+                                "file": (
+                                    "translation_results.zip",
+                                    f,
+                                    "application/zip",
+                                )  # 파일 이름 고정 또는 share_zip_path 기반으로 동적 생성 가능
+                            }
+                            response = requests.post(
+                                SERVER_URL,
+                                data=form_data,
+                                files=files_data,
+                                timeout=120,
+                            )  # 타임아웃 추가
+
+                        # 서버 응답 확인
+                        if response.status_code == 200:
+                            response_json = response.json()
+                            log_message = f"서버 전송 완료: {response_json.get('message', '성공')}"
+                            if response_json.get("url"):
+                                log_message += f" (URL: {response_json['url']})"
+                            add_log(log_message)
                         else:
-                            # 25MB 초과 - Catbox 사용
-                            share_url = catbox_client.upload(share_zip_path)
-                            webhook = DiscordWebhook(
-                                url=os.getenv("DISCORD_WEBHOOK_URL"),
-                                content=f"{share_url}\n\n모델 정보:\n- Provider: {provider}\n- Model: {model_name}\n- Temperature: {temperature}\n- 병렬 요청 분할: {file_split_number}\n",
-                                thread_name=f"모드팩 번역 결과 ({resourcepack_name})",
+                            add_log(
+                                f"서버 전송 실패: 상태 코드 {response.status_code}, 응답: {response.text}"
                             )
-                            webhook.execute()
 
-                        add_log("공유 링크 전송됨")
-                    else:
-                        add_log(
-                            "디스코드로의 공유를 원하신다면 https://mc-pack-translator.2odk.com 에서 번역을 해주세요."
-                        )
-                        gr.Info(
-                            "디스코드로의 공유를 원하신다면 https://mc-pack-translator.2odk.com 에서 번역을 해주세요."
-                        )
+                    except requests.exceptions.RequestException as e:
+                        add_log(f"서버 전송 오류: {e}")
+                    except Exception as e:
+                        add_log(f"결과 전송 중 예외 발생: {e}")
+                    finally:
+                        # 임시 파일 삭제 (필요한 경우 유지)
+                        # os.remove(share_zip_path)
+                        pass  # Gradio에서 처리한다면 여기서 삭제 불필요
+
                 except Exception as e:
                     print(f"공유 중 오류: {e}")
             return "Waiting for starting...", gr.update(

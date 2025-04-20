@@ -48,7 +48,7 @@ def main():
 
     print("=" * 20)
     print(
-        f"\n웹 브라우저에서 https://localhost:{os.getenv('SERVER_PORT', 7860)} 로 접속하세요.\n"
+        f"\n웹 브라우저에서 http://localhost:{os.getenv('SERVER_PORT', 7860)}/gradio-demo 로 접속하세요.\n"
     )
     print("=" * 20)
 
