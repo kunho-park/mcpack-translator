@@ -114,7 +114,9 @@ def create_modpack_translator_ui(config_state):
             if existing_translation_zip:
                 try:
                     with zipfile.ZipFile(existing_translation_zip.name, "r") as zf:
-                        zf.extractall(output_dir)
+                        zf.extractall(
+                            temp_dir, members=None, pwd=None
+                        )  # 중복 파일 덮어쓰기 허용
                     add_log(f"기존 번역본 ZIP 압축 해제 완료: {output_dir}")
                 except Exception as e:
                     add_log(f"기존 번역본 ZIP 처리 중 오류 발생: {e}")
