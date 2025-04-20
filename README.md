@@ -9,7 +9,7 @@
 - 포맷 코드(§) 보존
 - 대형 언어 모델(LLM)을 활용한 자연스러운 번역
 - 고유명사 및 게임 용어 정확한 번역
-- GUI 인터페이스 제공
+- 웹 인터페이스 제공
 
 ## 기본 요구 사항
 - [uv](https://github.com/astral-sh/uv)
@@ -38,7 +38,7 @@
 git clone https://github.com/kunho-park/mcpack-translator.git
 cd mcpack-translator
 uv sync
-streamlit run gui.py
+uv run python gradio_app.py
 ```
 
 ## 환경 설정
@@ -52,19 +52,19 @@ GOOGLE_API_KEY=your_google_api_key_here
 
 ## 사용 방법
 
-### GUI 인터페이스 사용
+### 웹 인터페이스 사용
 
-GUI 인터페이스를 시작하려면:
+웹 인터페이스를 시작하려면:
 
 ```bash
-# Windows에서 GUI 실행 (자동 설치 사용시)
+# Windows에서 웹 인터페이스 실행 (자동 설치 사용시)
 run.bat
 
 # 또는 직접 실행
-streamlit run gui.py
+uv run python gradio_app.py
 ```
 
-GUI를 통해 다음 작업을 수행할 수 있습니다:
+웹 인터페이스를 통해 다음 작업을 수행할 수 있습니다:
 - 모드팩 파일 선택 및 번역
 - 리소스팩 생성
 - 번역 모델 및 옵션 설정
@@ -78,12 +78,11 @@ GUI를 통해 다음 작업을 수행할 수 있습니다:
 
 ## 커스터마이징
 
-`minecraft_modpack_auto_translator/config.py` 파일에서 다음 설정을 조정할 수 있습니다:
+`gradio_pages/model_settings.py` 파일 및 `.env` 파일에서 다음 설정을 조정할 수 있습니다:
 
-- 번역 모델 및 파라미터
-- 포맷 코드 및 플레이스홀더 처리 방식
-- 파일 처리 옵션
-- GUI 기본 설정
+- 번역 모델 및 파라미터 (`model_settings.py`)
+- GUI 기본 설정 (`model_settings.py`)
+- API 키 및 서버 설정 (`.env`)
 
 ## 라이센스
 
