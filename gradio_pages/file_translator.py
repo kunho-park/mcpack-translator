@@ -113,7 +113,7 @@ def create_file_translator_ui(config_state):
 
             # 임시 출력 경로 설정
             os.makedirs("./temp/translated", exist_ok=True)
-            tmp_out_dir = tempfile.mkdtemp(
+            tmp_out_dir = tempfile.NamedTemporaryFile(
                 prefix="translated_",
                 dir="./temp/translated",
                 delete=False,
