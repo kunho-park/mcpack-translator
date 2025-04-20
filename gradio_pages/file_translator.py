@@ -117,7 +117,7 @@ def create_file_translator_ui(config_state):
                 prefix="translated_",
                 dir="./temp/translated",
                 delete=False,
-            )
+            ).name
             tmp_out_name = (
                 f"translated_{os.path.splitext(os.path.basename(tmp_in_path))[0]}.json"
             )
