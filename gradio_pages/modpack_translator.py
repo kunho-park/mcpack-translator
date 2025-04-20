@@ -130,7 +130,7 @@ def create_modpack_translator_ui(config_state):
 
             # ZIP 압축 해제 (Gradio File 객체 지원)
             os.makedirs("./temp/progress", exist_ok=True)
-            temp_dir = tempfile.TemporaryDirectory(dir="./temp/progress", delete=False)
+            temp_dir = tempfile.TemporaryDirectory(dir="./temp/progress")
             input_dir = os.path.join(temp_dir.name, "input").replace("\\", "/")
             output_dir = os.path.join(temp_dir.name, "output").replace("\\", "/")
             os.makedirs(input_dir, exist_ok=True)
