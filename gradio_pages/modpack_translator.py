@@ -41,6 +41,11 @@ def create_modpack_translator_ui(config_state):
                 file_types=[".zip"],
                 value=None,  # 기본값 None으로 설정하여 선택 사항임을 명시
             )
+            custom_dictionary_dict_input = gr.File(
+                label="사전 파일 업로드",
+                file_types=[".json"],
+                value=None,
+            )
             build_dict = gr.Checkbox(label="기존 번역에서 사전 자동 구축", value=True)
             skip_translated = gr.Checkbox(label="이미 번역된 파일 건너뛰기", value=True)
             resourcepack_name = gr.Textbox(
@@ -149,7 +154,7 @@ def create_modpack_translator_ui(config_state):
             async def progress_callback(progress):
                 pr(progress[0] / progress[1], desc="번역 중..")
 
-            asyncio.run(
+            results, dict_init = asyncio.run(
                 run_json_translation(
                     file_pairs,
                     source_lang,
@@ -159,6 +164,7 @@ def create_modpack_translator_ui(config_state):
                     max_workers,
                     file_split_number,
                     use_random_order,
+                    custom_dictionary_path=custom_dictionary_dict_input.name,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
                 )
@@ -189,6 +195,14 @@ def create_modpack_translator_ui(config_state):
             with zipfile.ZipFile(final_buf, "w", zipfile.ZIP_DEFLATED) as zf:
                 for pack in created_packs:
                     zf.write(pack["path"], arcname=os.path.basename(pack["path"]))
+
+                try:
+                    dict_json = json.dumps(dict_init, ensure_ascii=False, indent=4)
+                    zf.writestr("translation_dictionary.json", dict_json)
+                    add_log("번역 사전을 ZIP 파일에 저장 완료")
+                except Exception as e:
+                    add_log(f"번역 사전 저장 중 오류 발생: {e}")
+
             final_buf.seek(0)
 
             # 임시 파일로 최종 ZIP 저장 (NamedTemporaryFile 사용)

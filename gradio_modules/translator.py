@@ -28,6 +28,7 @@ async def run_json_translation(
     max_workers,
     file_split_number,
     use_random_order,
+    custom_dictionary_path=None,
     progress_callback=None,
     logger_client=None,
 ):
@@ -73,22 +74,20 @@ async def run_json_translation(
         source_lang, os.getenv("LANG_CODE", "ko_kr")
     )
     if build_dict:
-        dict_init, dict_lower, _, _ = build_dictionary_from_files(
+        dict_init, dict_lower, added, _ = build_dictionary_from_files(
             [fp["input"] for fp in file_pairs],
             os.getcwd(),
             dict_init,
             dict_lower,
             source_lang,
         )
+        logger_client.write(f"기존 번역에서 추가된 사전 항목: {added}개")
 
-        dict_init, dict_lower, _, _ = build_dictionary_from_files(
-            [fp["output"] for fp in file_pairs if os.path.exists(fp["output"])],
-            os.getcwd(),
-            dict_init,
-            dict_lower,
-            source_lang,
+    if custom_dictionary_path:
+        dict_init, dict_lower = load_custom_dictionary(
+            custom_dictionary_path, dict_init, dict_lower
         )
-    dict_init, dict_lower = load_custom_dictionary(None, dict_init, dict_lower)
+        logger_client.write("커스텀 사전 추가 완료")
 
     # 워커들이 순환하며 사용할 API 키 이터레이터 생성
     key_cycle = itertools.cycle(api_keys)
@@ -201,4 +200,4 @@ async def run_json_translation(
 
     # 취소된 태스크 처리 완료 대기
     await asyncio.gather(*workers, return_exceptions=True)
-    return results
+    return results, dict_init

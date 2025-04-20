@@ -68,7 +68,8 @@ def load_custom_dictionary(
 ):
     """업로드된 커스텀 사전 파일을 로드하고 기존 사전에 병합합니다."""
     if custom_dict_file is not None:
-        data = json.load(custom_dict_file)
+        with open(custom_dict_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
         for en, ko in data.items():
             add_to_dictionary(
                 en, ko, translation_dictionary, translation_dictionary_lowercase
