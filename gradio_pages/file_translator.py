@@ -112,7 +112,12 @@ def create_file_translator_ui(config_state):
             add_log(f"임시 JSON 입력 파일 생성: {tmp_in_path}")
 
             # 임시 출력 경로 설정
-            tmp_out_dir = tempfile.mkdtemp()
+            os.makedirs("./temp/translated", exist_ok=True)
+            tmp_out_dir = tempfile.mkdtemp(
+                prefix="translated_",
+                dir="./temp/translated",
+                delete=False,
+            )
             tmp_out_name = (
                 f"translated_{os.path.splitext(os.path.basename(tmp_in_path))[0]}.json"
             )
@@ -189,12 +194,15 @@ def create_file_translator_ui(config_state):
             # 최종 번역 파일 저장 및 다운로드 설정
             final_ext = ext
             final_name_prefix = f"{os.path.splitext(uploaded_file.name)[0]}_{os.getenv('LANG_CODE', 'ko_kr')}"
+            os.makedirs("./temp/final", exist_ok=True)
+
             tmp_final = tempfile.NamedTemporaryFile(
                 delete=False,
                 mode="w",
                 encoding="utf-8",
                 suffix=final_ext,
                 prefix=final_name_prefix,
+                dir="./temp/final",
             )
             tmp_final.write(translated_content)
             tmp_final_path = tmp_final.name
