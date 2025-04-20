@@ -32,48 +32,72 @@ def delete_file_later(file_path):
 def create_modpack_translator_ui(config_state):
     with gr.Blocks() as tab:
         gr.Markdown("## 🌐 원클릭 모드팩 번역기")
+        with gr.Row():
+            with gr.Column(scale=1, min_width=300):
+                with gr.Accordion("번역 옵션", open=True):
+                    source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
+                    zip_input = gr.File(
+                        label="모드팩 ZIP 파일 업로드", file_types=[".zip"]
+                    )
+                    existing_translation_zip_input = gr.File(
+                        label="기존 번역본 ZIP (선택)",
+                        file_types=[".zip"],
+                        value=None,
+                    )
+                    custom_dictionary_input = gr.File(
+                        label="사전 파일 업로드",
+                        file_types=[".json"],
+                        value=None,
+                    )
+                    with gr.Row():
+                        build_dict = gr.Checkbox(
+                            label="기존 번역에서 사전 자동 구축", value=True
+                        )
+                        skip_translated = gr.Checkbox(
+                            label="이미 번역된 파일 건너뛰기", value=True
+                        )
+                    resourcepack_name = gr.Textbox(
+                        label="리소스팩 이름",
+                        value="Auto-Translated-KO",
+                    )
+                    with gr.Row():
+                        translate_config = gr.Checkbox(
+                            label="Config 파일 번역", value=True
+                        )
+                        translate_kubejs = gr.Checkbox(
+                            label="KubeJS 파일 번역", value=True
+                        )
+                        translate_mods = gr.Checkbox(label="Mods 파일 번역", value=True)
+                    with gr.Row():
+                        max_workers = gr.Number(
+                            label="동시 작업자 수", value=5, maximum=10
+                        )
+                        file_split_number = gr.Number(
+                            label="파일 분할 작업자 수", value=1, maximum=5
+                        )
+                    use_random_order = gr.Checkbox(
+                        label="랜덤 순서로 번역", value=False
+                    )
 
-        with gr.Accordion("번역 옵션", open=True):
-            source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
-            zip_input = gr.File(label="모드팩 ZIP 파일 업로드", file_types=[".zip"])
-            existing_translation_zip_input = gr.File(
-                label="기존 번역본 ZIP (선택)",
-                file_types=[".zip"],
-                value=None,  # 기본값 None으로 설정하여 선택 사항임을 명시
-            )
-            custom_dictionary_input = gr.File(
-                label="사전 파일 업로드",
-                file_types=[".json"],
-                value=None,
-            )
-            build_dict = gr.Checkbox(label="기존 번역에서 사전 자동 구축", value=True)
-            skip_translated = gr.Checkbox(label="이미 번역된 파일 건너뛰기", value=True)
-            resourcepack_name = gr.Textbox(
-                label="리소스팩 이름", value="Auto-Translated-KO"
-            )
-            translate_config = gr.Checkbox(label="Config 파일 번역", value=True)
-            translate_kubejs = gr.Checkbox(label="KubeJS 파일 번역", value=True)
-            translate_mods = gr.Checkbox(label="Mods 파일 번역", value=True)
-            max_workers = gr.Number(label="동시 작업자 수", value=5, maximum=10)
-            file_split_number = gr.Number(
-                label="파일 분할 작업자 수", value=1, maximum=5
-            )
-            use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
+                    with gr.Row():
+                        share_results = gr.Checkbox(
+                            label="번역 결과 공유 (Discord)", value=True
+                        )
 
-            share_results = gr.Checkbox(label="번역 결과 공유 (Discord)", value=True)
+            with gr.Column(scale=1, min_width=300):
+                translate_btn = gr.Button("번역 시작")
+                progress_bar_box = gr.Label(
+                    value="Waiting for starting...", label="진행 상황"
+                )
+                pr = gr.Progress(track_tqdm=True)
 
-        translate_btn = gr.Button("번역 시작")
-
-        progress_bar_box = gr.Label(value="Waiting for starting...")
-        pr = gr.Progress(track_tqdm=True)
-
-        log_output = gr.Textbox(
-            label="상세 로그",
-            lines=10,
-            interactive=False,
-            placeholder="번역 로그가 여기에 표시됩니다...",
-        )
-        download = gr.DownloadButton(label="번역 결과 다운로드", visible=False)
+                log_output = gr.Textbox(
+                    label="상세 로그",
+                    lines=10,
+                    interactive=False,
+                    placeholder="번역 로그가 여기에 표시됩니다...",
+                )
+                download = gr.DownloadButton(label="번역 결과 다운로드", visible=False)
 
         def start_translation(
             source_lang,
@@ -153,7 +177,10 @@ def create_modpack_translator_ui(config_state):
 
             # 모든 파일 번역 실행 (프로그래스 콜백 전달)
             async def progress_callback(progress):
-                pr(progress[0] / progress[1], desc="번역 중..")
+                pr(
+                    progress[0] / progress[1],
+                    desc=f"번역 중.. ({progress[0]}/{progress[1]})",
+                )
 
             results, dict_init = asyncio.run(
                 run_json_translation(

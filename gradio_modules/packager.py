@@ -33,7 +33,7 @@ async def package_categories(
             pack_path = create_resourcepack(
                 output_dir,
                 [
-                    os.path.join(output_dir, category, "output")
+                    os.path.join(output_dir, category)
                     if category != "mods"
                     else os.path.join(output_dir, category, "extracted")
                 ],
