@@ -82,7 +82,7 @@ DICTIONARY_BLACKLIST = [
 ]
 
 TEMPLATE_TRANSLATE_TEXT = """\
-당신은 번역 전문가입니다. 아래 지침에 따라 영어 텍스트를 한국어로 번역하세요. 이때 모든 태그(<>, {})와 [P숫자] 플레이스홀더는 원본과 동일하게 유지해야 합니다.
+당신은 번역 전문가입니다. 아래 지침에 따라 영어 텍스트를 한국어로 번역하세요.
 
 <translation_rules>
 {translation_rules}
@@ -90,9 +90,7 @@ TEMPLATE_TRANSLATE_TEXT = """\
 
 <dictionary_instructions>
 {dictionary_instructions}
-</dictionary_instructions>
-
-{placeholders}
+</dictionary_instructions>{placeholders}
 
 <dictionary>
 {dictionary}

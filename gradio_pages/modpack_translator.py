@@ -13,7 +13,7 @@ from gradio_modules.dictionary_builder import process_modpack_directory
 from gradio_modules.logger import Logger
 from gradio_modules.packager import package_categories
 from gradio_modules.translator import run_json_translation
-
+import uuid
 # 스케줄러 초기화 및 시작
 scheduler = BackgroundScheduler()
 scheduler.start()
@@ -130,9 +130,9 @@ def create_modpack_translator_ui(config_state):
 
             # ZIP 압축 해제 (Gradio File 객체 지원)
             os.makedirs("./temp/progress", exist_ok=True)
-            temp_dir = tempfile.TemporaryDirectory(dir="./temp/progress")
-            input_dir = os.path.join(temp_dir.name, "input").replace("\\", "/")
-            output_dir = os.path.join(temp_dir.name, "output").replace("\\", "/")
+            temp_dir = "./temp/progress/{}".format(uuid.uuid4())
+            input_dir = os.path.join(temp_dir, "input").replace("\\", "/")
+            output_dir = os.path.join(temp_dir, "output").replace("\\", "/")
             os.makedirs(input_dir, exist_ok=True)
             os.makedirs(output_dir, exist_ok=True)
             with zipfile.ZipFile(zip_file.name, "r") as zf:
@@ -146,7 +146,7 @@ def create_modpack_translator_ui(config_state):
                             if not file.endswith(".tmp") or not file.endswith(
                                 ".converted"
                             ):
-                                zf.extract(file, temp_dir.name)
+                                zf.extract(file, temp_dir)
                     add_log(f"기존 번역본 ZIP 압축 해제 완료: {output_dir}")
                 except Exception as e:
                     add_log(f"기존 번역본 ZIP 처리 중 오류 발생: {e}")
@@ -248,10 +248,10 @@ def create_modpack_translator_ui(config_state):
             # jar_fingerprints를 Discord로 공유
             if share_results:
                 try:
-                    fingerprint_path = os.path.join(temp_dir.name, "fingerprint.json")
+                    fingerprint_path = os.path.join(temp_dir, "fingerprint.json")
                     with open(fingerprint_path, "w", encoding="utf-8") as f:
                         json.dump(jar_fingerprints, f, ensure_ascii=False, indent=4)
-                    share_zip_path = os.path.join(temp_dir.name, "shared_result.zip")
+                    share_zip_path = os.path.join(temp_dir, "shared_result.zip")
                     with zipfile.ZipFile(
                         share_zip_path, "w", zipfile.ZIP_DEFLATED
                     ) as share_zf:
