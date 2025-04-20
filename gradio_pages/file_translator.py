@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import tempfile
+import uuid
 
 import gradio as gr
 from langchain_core.rate_limiters import InMemoryRateLimiter
@@ -112,12 +113,9 @@ def create_file_translator_ui(config_state):
             add_log(f"임시 JSON 입력 파일 생성: {tmp_in_path}")
 
             # 임시 출력 경로 설정
-            os.makedirs("./temp/translated", exist_ok=True)
-            tmp_out_dir = tempfile.NamedTemporaryFile(
-                prefix="translated_",
-                dir="./temp/translated",
-                delete=False,
-            ).name
+            tmp_out_dir = "./temp/translated/{}".format(uuid.uuid4())
+            os.makedirs(tmp_out_dir, exist_ok=True)
+
             tmp_out_name = (
                 f"translated_{os.path.splitext(os.path.basename(tmp_in_path))[0]}.json"
             )
