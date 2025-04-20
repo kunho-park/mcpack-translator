@@ -102,7 +102,7 @@ def create_modpack_translator_ui(config_state):
             add_log(f"모델 설정: {provider}, {model_name}, 온도={temperature}")
 
             # ZIP 압축 해제 (Gradio File 객체 지원)
-            temp_dir = tempfile.TemporaryDirectory()
+            temp_dir = tempfile.TemporaryDirectory(dir="./temp/progress")
             input_dir = os.path.join(temp_dir.name, "input")
             output_dir = os.path.join(temp_dir.name, "output")
             os.makedirs(input_dir, exist_ok=True)
