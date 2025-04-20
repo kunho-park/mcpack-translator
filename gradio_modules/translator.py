@@ -119,7 +119,10 @@ async def run_json_translation(
     async def worker():
         nonlocal completed_count
         while not queue.empty():
-            pair = await queue.get()
+            try:
+                pair = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
             try:
                 in_path = pair["input"]
                 out_path = pair["output"]
@@ -128,10 +131,6 @@ async def run_json_translation(
                     results.append(out_path)
                     if logger_client:
                         logger_client.write(f"이미 번역된 파일 건너뛰기: {out_path}")
-                    if progress_callback:
-                        completed_count += 1
-                        await progress_callback((completed_count, total))
-                    queue.task_done()
                     continue
                 # 임시 JSON 파일로 번역
                 temp_json_out = out_path + ".tmp"
@@ -152,8 +151,12 @@ async def run_json_translation(
                 with open(temp_json_in, "w", encoding="utf-8") as of:
                     of.write(json_input)
 
-                if logger_client:
-                    logger_client.write(f"번역 시작: {in_path}")
+                with lock:
+                    if logger_client:
+                        logger_client.write(f"번역 시작: {in_path}")
+                    completed_count += 1
+                    await progress_callback((completed_count, total))
+
                 await translate_json_file(
                     input_path=temp_json_in,
                     output_path=temp_json_out,
@@ -174,20 +177,22 @@ async def run_json_translation(
                     of.write(content)
 
                 results.append(out_path)
-                if logger_client:
-                    logger_client.write(f"번역 완료: {out_path}")
-                # 파일 번역 완료 시 진행률 업데이트
+                with lock:
+                    if logger_client:
+                        logger_client.write(f"번역 완료: {out_path}")
+                    # 파일 번역 완료 시 진행률 업데이트
+            except Exception as e:
+                # 예외 로깅 또는 처리 (선택 사항)
+                with lock:
+                    if logger_client:
+                        logger_client.write(f"Error processing {pair}: {e}")
+                # 필요한 경우 추가적인 오류 처리 로직 추가
+            finally:
+                # 예외 발생 여부와 관계없이 항상 task_done() 호출
                 async with lock:
                     completed_count += 1
                     if progress_callback:
                         await progress_callback((completed_count, total))
-            except Exception as e:
-                # 예외 로깅 또는 처리 (선택 사항)
-                if logger_client:
-                    logger_client.write(f"Error processing {pair}: {e}")
-                # 필요한 경우 추가적인 오류 처리 로직 추가
-            finally:
-                # 예외 발생 여부와 관계없이 항상 task_done() 호출
                 queue.task_done()
 
     # 워커 태스크 실행
