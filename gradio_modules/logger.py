@@ -1,5 +1,7 @@
 import os
 
+import aiofiles
+
 
 class Logger:
     def __init__(self, filepath):
@@ -9,6 +11,10 @@ class Logger:
     def write(self, message):
         with open(self.filename, "a") as f:
             f.write(message + "\n")
+
+    async def awrite(self, message):
+        async with aiofiles.open(self.filename, mode="a") as f:
+            await f.write(message + "\n")
 
     def isatty(self):
         return False

@@ -347,9 +347,7 @@ async def translate_text(state):
                 """Custom boolean parser."""
 
                 def parse(self, text: str) -> bool:
-                    pattern = r'\\([^"\\/bfnrtu])'
-                    cleaned_text = re.sub(pattern, lambda m: f"\\\\{m.group(1)}", text)
-                    return cleaned_text
+                    return text
 
             class DictionaryEntry(BaseModel):
                 en: str = Field(..., description="영어 단어")
