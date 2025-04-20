@@ -347,7 +347,8 @@ async def translate_text(state):
                 """Custom boolean parser."""
 
                 def parse(self, text: str) -> bool:
-                    return text
+                    cleaned_text = text.replace(r"\&", "&")
+                    return cleaned_text
 
             class DictionaryEntry(BaseModel):
                 en: str = Field(..., description="영어 단어")
