@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import io
 import json
 import os
@@ -245,16 +244,6 @@ def create_modpack_translator_ui(config_state):
                 final_zip_path = temp_zip_file.name  # 파일 경로 저장
 
             add_log(f"최종 ZIP 생성 완료: {final_zip_path}")
-
-            # 30분 후 임시 파일 삭제 예약
-            run_time = datetime.datetime.now() + datetime.timedelta(minutes=30)
-            scheduler.add_job(
-                delete_file_later,
-                trigger="date",
-                run_date=run_time,
-                args=[final_zip_path],
-            )
-            print(f"임시 파일 삭제 예약됨 ({final_zip_path}) at {run_time}")
 
             # jar_fingerprints를 Discord로 공유
             if share_results:
