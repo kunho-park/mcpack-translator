@@ -32,9 +32,32 @@ def delete_file_later(file_path):
         print(f"임시 파일 삭제 오류 ({file_path}): {e}")
 
 
-def  create_modpack_translator_ui(config_state):
+def create_modpack_translator_ui(config_state):
     with gr.Blocks() as tab:
         gr.Markdown("## 🌐 원클릭 모드팩 번역기")
+        with gr.Accordion("📖 사용 설명서 (클릭하여 펼치기)", open=False):
+            gr.Markdown("""
+            ### 🌟 AI 모드팩 번역기 사용 가이드
+            
+            **📌 기본 사용법:**
+            1. 모드팩 ZIP 파일을 업로드하세요
+            2. (선택) 기존 번역본이나 커스텀 사전 파일을 업로드할 수 있습니다
+            3. 번역 옵션을 설정한 후 '번역 시작' 버튼을 클릭하세요
+            4. 번역이 완료되면 결과 ZIP 파일을 다운로드 받으세요
+            
+            **⚙️ 주요 기능 설명:**
+            - **기존 번역에서 사전 자동 구축**: 기존 번역 파일을 분석하여 번역 품질 향상
+            - **이미 번역된 파일 건너뛰기**: 중복 작업 방지
+            - **Config/KubeJS/Mods 파일 번역**: 다양한 파일 유형 선택적 번역 지원
+            - **동시 작업자 수**: 병렬 처리로 번역 속도 조절 가능
+            
+            **📚 자세한 설명은 [공식 문서](https://kunho-park.notion.site/AI-mcpack-translator-1dc8edfca9988073a109f2b746f1aa8d) 참조**
+            
+            **⚠️ 주의사항:**
+            - 대용량 모드팩의 경우 시간이 오래 걸릴 수 있습니다
+            - 번역 품질을 높이려면 커스텀 사전 사용을 권장합니다
+            - 오류 발생 시 로그를 확인해주세요
+            """)
         with gr.Row():
             with gr.Column(scale=1, min_width=300):
                 with gr.Accordion("번역 옵션", open=True):

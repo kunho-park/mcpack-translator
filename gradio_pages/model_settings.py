@@ -31,6 +31,7 @@ def create_model_settings_ui(config_state):
             label="API 키들 (줄바꿈으로 구분)",
             placeholder="각 키를 줄바꿈으로 입력하세요",
             lines=4,
+            value="sk-proj-1234567890",
         )
         api_base = gr.Textbox(label="API Base URL", placeholder="(선택 사항)")
         model_name = gr.Textbox(

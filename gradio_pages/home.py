@@ -6,6 +6,9 @@ def create_home_ui():
         gr.Markdown("# 🏠 홈")
         gr.Markdown("마인크래프트 모드팩 자동 번역기에 오신 것을 환영합니다!")
         gr.Markdown("왼쪽 탭 메뉴에서 원하는 번역 기능을 선택하세요.")
+        gr.Markdown(
+            "## 📖 [사용 설명서 (클릭)](https://kunho-park.notion.site/AI-mcpack-translator-1dc8edfca9988073a109f2b746f1aa8d)"
+        )
 
         with gr.Row():
             with gr.Column():
@@ -21,8 +24,5 @@ def create_home_ui():
                 )
                 gr.Markdown(
                     "### 📂 [GitHub 저장소 방문하기](https://github.com/kunho-park/mcpack-translator)"
-                )
-                gr.Markdown(
-                    "### 📖 [사용 설명서 보기](https://kunho-park.notion.site/AI-mcpack-translator-1dc8edfca9988073a109f2b746f1aa8d)"
                 )
     return home_tab
