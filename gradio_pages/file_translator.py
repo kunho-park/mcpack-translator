@@ -132,7 +132,9 @@ def create_file_translator_ui(config_state):
 
             # 번역 실행
             try:
-                api_keys = config.get("api_keys", [])
+                api_keys = config.get("api_keys", None)
+                if api_keys is None or isinstance(api_keys, str):
+                    api_keys = ["sk-proj-1234567890"]
                 selected_api_key = api_keys[0]
                 add_log("단일 파일 번역 시 첫번째 API 키 사용")
                 asyncio.run(
@@ -162,7 +164,6 @@ def create_file_translator_ui(config_state):
                 return (
                     gr.update(value="번역 실패"),
                     gr.update(visible=False),
-                    logger_client.read_logs(),
                 )
             # 결과 JSON 로드 및 원본 포맷으로 변환
             try:
