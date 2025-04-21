@@ -32,7 +32,7 @@ def delete_file_later(file_path):
         print(f"임시 파일 삭제 오류 ({file_path}): {e}")
 
 
-def create_modpack_translator_ui(config_state):
+def  create_modpack_translator_ui(config_state):
     with gr.Blocks() as tab:
         gr.Markdown("## 🌐 원클릭 모드팩 번역기")
         with gr.Row():
@@ -131,7 +131,6 @@ def create_modpack_translator_ui(config_state):
             model_name = config.get("model_name")
             temperature = config.get("temperature")
             add_log(f"모델 설정: {provider}, {model_name}, 온도={temperature}")
-
             # ZIP 압축 해제 (Gradio File 객체 지원)
             os.makedirs("./temp/progress", exist_ok=True)
             temp_dir = "./temp/progress/{}".format(uuid.uuid4())

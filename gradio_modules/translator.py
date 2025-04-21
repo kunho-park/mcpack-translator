@@ -16,6 +16,7 @@ from .dictionary_builder import (
     build_dictionary_from_files,
     initialize_translation_dictionary,
     load_custom_dictionary,
+    filter_korean_lang_files,
 )
 
 
@@ -89,6 +90,7 @@ async def run_json_translation(
         )
         logger_client.write("커스텀 사전 추가 완료")
 
+    file_pairs = filter_korean_lang_files(file_pairs, source_lang)
     # 워커들이 순환하며 사용할 API 키 이터레이터 생성
     key_cycle = itertools.cycle(api_keys)
 

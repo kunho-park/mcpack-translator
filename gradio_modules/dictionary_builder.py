@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import shutil
 import traceback
 import zipfile
 from glob import escape as glob_escape
@@ -147,22 +146,20 @@ def process_modpack_directory(
         for jar in glob(jar_pattern):
             fingerprints[os.path.basename(jar)] = fingerprint_file(jar)
             with zipfile.ZipFile(jar, "r") as zf:
+                out_dir = os.path.join(
+                    modpack_path,
+                    "mods",
+                    "extracted",
+                    os.path.basename(jar),
+                )
+                os.makedirs(out_dir, exist_ok=True)
+                zf.extractall(out_dir)
                 for entry in zf.namelist():
                     if os.path.splitext(entry)[1] in supported_exts and (
                         any(d in entry for d in DIR_FILTER_WHITELIST)
                         or src_lower in entry.lower()
                     ):
-                        out = os.path.join(
-                            modpack_path,
-                            "mods",
-                            "extracted",
-                            os.path.basename(jar),
-                            entry,
-                        )
-                        os.makedirs(os.path.dirname(out), exist_ok=True)
-                        with zf.open(entry) as src, open(out, "wb") as dst:
-                            shutil.copyfileobj(src, dst)
-                        files.append(out)
+                        files.append(os.path.join(out_dir, entry))
             jar_files.append(jar)
 
     logger.info(f"찾은 파일: {len(files)}개 (mods 처리)")
@@ -182,8 +179,11 @@ def build_dictionary_from_jar(
         with zipfile.ZipFile(jar, "r") as zf:
             for f in zf.namelist():
                 if source_lang_code.lower() in f.lower():
-                    target = f.replace(
-                        source_lang_code, os.getenv("LANG_CODE", "ko_kr"), 1
+                    target = f.replace(source_lang_code, "ko_kr").replace(
+                        source_lang_code.split("_")[0]
+                        + "_"
+                        + source_lang_code.split("_")[1].upper(),
+                        "ko_KR",
                     )
                     if target in zf.namelist():
                         en_c = zf.read(f).decode("utf-8", errors="ignore")
@@ -225,40 +225,69 @@ def build_dictionary_from_files(
     """파일 시스템 내 언어 파일에서 번역 사전을 구축합니다."""
     count, added = 0, 0
     for en_file in en_us_files:
-        rel = en_file.replace(modpack_path, "").lstrip("/\\")
-        target = os.path.join(
-            modpack_path,
-            rel.replace(source_lang_code, os.getenv("LANG_CODE", "ko_kr"), 1),
+        rel = en_file
+        target = rel.replace(
+            source_lang_code,
+            "ko_kr",
+        ).replace(
+            source_lang_code.split("_")[0]
+            + "_"
+            + source_lang_code.split("_")[1].upper(),
+            "ko_KR",
         )
+
         if os.path.exists(target):
-            en_data = extract_lang_content(en_file)
-            ko_data = extract_lang_content(target)
-            if isinstance(en_data, dict) and isinstance(ko_data, dict):
-                for key, ev in en_data.items():
-                    if (
-                        key in ko_data
-                        and isinstance(ev, str)
-                        and isinstance(ko_data[key], str)
-                    ):
-                        if ev == ko_data[key]:
-                            continue
+            try:
+                en_data = extract_lang_content(en_file)
+                ko_data = extract_lang_content(target)
+                if isinstance(en_data, dict) and isinstance(ko_data, dict):
+                    for key, ev in en_data.items():
                         if (
-                            key.split(".")[0] in DICTIONARY_PREFIX_WHITELIST
-                            and key.split(".")[-1] not in DICTIONARY_SUFFIX_BLACKLIST
+                            key in ko_data
+                            and isinstance(ev, str)
+                            and isinstance(ko_data[key], str)
                         ):
-                            clean_e = ev.replace("_", "")
-                            clean_k = ko_data[key].replace("_", "")
-                            translation_dictionary, translation_dictionary_lowercase = (
-                                add_to_dictionary(
+                            if ev == ko_data[key]:
+                                continue
+                            if (
+                                key.split(".")[0] in DICTIONARY_PREFIX_WHITELIST
+                                and key.split(".")[-1]
+                                not in DICTIONARY_SUFFIX_BLACKLIST
+                            ):
+                                clean_e = ev.replace("_", "")
+                                clean_k = ko_data[key].replace("_", "")
+                                (
+                                    translation_dictionary,
+                                    translation_dictionary_lowercase,
+                                ) = add_to_dictionary(
                                     clean_e,
                                     clean_k,
                                     translation_dictionary,
                                     translation_dictionary_lowercase,
                                 )
-                            )
-                            added += 1
-                count += 1
+                                added += 1
+                    count += 1
+            except Exception:
+                logger.error(f"기존 번역에서 파일 읽기 실패: {en_file}")
     return translation_dictionary, translation_dictionary_lowercase, count, added
+
+
+def filter_korean_lang_files(files, source_lang_code):
+    return [
+        f
+        for f in files
+        if not os.path.exists(
+            f["input"]
+            .replace(source_lang_code, "ko_kr")
+            .replace(
+                source_lang_code.split("_")[0]
+                + "_"
+                + source_lang_code.split("_")[1].upper(),
+                "ko_KR",
+            )
+        )
+        or any(d in f["input"] for d in DIR_FILTER_WHITELIST)
+    ]
 
 
 def extact_all_zip_files(modpack_path):

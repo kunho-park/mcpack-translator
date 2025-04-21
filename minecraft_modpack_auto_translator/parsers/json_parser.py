@@ -5,10 +5,13 @@ JSON 형식 파일을 처리하는 파서 클래스입니다.
 """
 
 import json
+import logging
 import re
 from typing import Any, Dict
 
 from .base_parser import BaseParser
+
+logger = logging.getLogger(__name__)
 
 
 class JSONParser(BaseParser):
@@ -31,14 +34,20 @@ class JSONParser(BaseParser):
             Dict[str, Any]: 파싱된 JSON 데이터
         """
         try:
+            content = re.sub(r"\t", " ", content)
             return json.loads(content)
         except json.JSONDecodeError:
             # 주석이 있는 경우 주석 제거 후 다시 시도
             try:
-                cleaned_content = cls.COMMENT_PATTERN.sub("", content)
-                return json.loads(cleaned_content)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"JSON 파싱 오류: {e}")
+                logger.info("JSON Comma 오류 수정 시도")
+                content = re.sub(r'("(?:\\?.)*?")|,\s*([]}])', r"\1\2", content)
+                return json.loads(content)
+            except json.JSONDecodeError:
+                try:
+                    cleaned_content = cls.COMMENT_PATTERN.sub("", content)
+                    return json.loads(cleaned_content)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"JSON 파싱 오류: {e}")
 
     @classmethod
     def save(cls, data: Dict[str, Any]) -> str:
