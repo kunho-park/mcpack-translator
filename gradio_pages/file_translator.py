@@ -211,7 +211,6 @@ def create_file_translator_ui(config_state):
             return (
                 gr.update(value="번역 완료"),
                 gr.update(value=tmp_final_path, visible=True),
-                logger_client.read_logs(),
             )
 
         translate_btn.click(
