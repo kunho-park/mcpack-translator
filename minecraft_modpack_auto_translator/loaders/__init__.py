@@ -8,6 +8,8 @@ from .ftbquests_chapter_loader import (
 )
 from .list_loader import ListLoader
 from .patchouli_books_loader import PatchouliBooksLoader
+from .paxi_loader import PaxiDatapackLoader
+from .puffish_skills_loader import PuffishSkillsLoader
 from .registry import LoaderRegistry
 from .string_loader import StringLoader
 from .tconstruct_loader import TConstructBooksLoader
@@ -27,4 +29,6 @@ __all__ = [
     "FTBQuestsChapterTitleLoader",
     "FTBQuestsChapterQuestsLoader",
     "WhiteListLoader",
+    "PuffishSkillsLoader",
+    "PaxiDatapackLoader",
 ]

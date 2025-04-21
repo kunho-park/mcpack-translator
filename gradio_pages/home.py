@@ -23,6 +23,6 @@ def create_home_ui():
                     "### 📂 [GitHub 저장소 방문하기](https://github.com/kunho-park/mcpack-translator)"
                 )
                 gr.Markdown(
-                    "### 📖 [사용 설명서 보기](https://github.com/kunho-park/mcpack-translator/wiki)"
+                    "### 📖 [사용 설명서 보기](https://kunho-park.notion.site/AI-mcpack-translator-1dc8edfca9988073a109f2b746f1aa8d)"
                 )
     return home_tab

@@ -39,6 +39,8 @@ from .loaders import (
     ListLoader,
     LoaderRegistry,
     PatchouliBooksLoader,
+    PaxiDatapackLoader,
+    PuffishSkillsLoader,
     StringLoader,
     TConstructBooksLoader,
     TranslationContext,
@@ -55,6 +57,8 @@ registry.register(PatchouliBooksLoader())
 registry.register(FTBQuestsChapterQuestsLoader())
 registry.register(FTBQuestsChapterTitleLoader())
 registry.register(TConstructBooksLoader())
+registry.register(PuffishSkillsLoader())
+registry.register(PaxiDatapackLoader())
 
 # 일반 케이스
 registry.register(ListLoader())
