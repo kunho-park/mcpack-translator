@@ -3,17 +3,21 @@ import io
 import json
 import os
 import tempfile
+import uuid
 import zipfile
 
 import gradio as gr
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from gradio_modules.dictionary_builder import process_modpack_directory
+from gradio_modules.dictionary_builder import (
+    process_modpack_directory,
+    restore_zip_files,
+)
 from gradio_modules.logger import Logger
 from gradio_modules.packager import package_categories
 from gradio_modules.translator import run_json_translation
-import uuid
+
 # 스케줄러 초기화 및 시작
 scheduler = BackgroundScheduler()
 scheduler.start()
@@ -198,6 +202,9 @@ def create_modpack_translator_ui(config_state):
             )
             # 진행률 완료
             pr(1, desc="번역 완료")
+
+            restore_zip_files(output_dir)
+
             add_log("모든 파일 번역 완료")
             # 리소스팩 카테고리별 생성 (Async Queue)
             add_log("리소스팩 생성 중...")
@@ -218,6 +225,7 @@ def create_modpack_translator_ui(config_state):
             )
             add_log(f"{len(created_packs)}개의 리소스팩 생성 완료")
             # 최종 ZIP 생성
+
             final_buf = io.BytesIO()
             with zipfile.ZipFile(final_buf, "w", zipfile.ZIP_DEFLATED) as zf:
                 for pack in created_packs:
@@ -267,6 +275,11 @@ def create_modpack_translator_ui(config_state):
                                         arc = os.path.join(
                                             jar_name,
                                             os.path.relpath(src_file, extract_path),
+                                        ).replace(
+                                            source_lang.split("_")[0]
+                                            + "_"
+                                            + source_lang.split("_")[1].upper(),
+                                            "ko_KR",
                                         )
                                         share_zf.write(src_file, arcname=arc)
 

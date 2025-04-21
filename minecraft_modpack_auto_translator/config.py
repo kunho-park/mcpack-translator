@@ -26,6 +26,8 @@ ADDED_DICTIONARY_ENTRIES = []
 
 DIR_FILTER_WHITELIST = [
     "/ftbquests/quests/chapters/",
+    "/paxi/datapacks/",
+    "/paxi/resourcepacks/",
 ]
 
 # 기본 영어 단어 블랙리스트

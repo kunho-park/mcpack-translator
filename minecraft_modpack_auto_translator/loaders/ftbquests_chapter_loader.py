@@ -275,7 +275,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
-            return value
+            return value, True
         try:
             value_dict = json.loads(value)
         except json.JSONDecodeError:

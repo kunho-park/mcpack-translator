@@ -80,10 +80,11 @@ class ListLoader(BaseLoader):
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
-            return value
+            return value, True
 
         try:
             translated_list: List[str] = []
+            has_error = False  # has_error 변수 초기화
 
             for item in value:
                 if not isinstance(item, str) or item.strip() == "":
@@ -101,10 +102,13 @@ class ListLoader(BaseLoader):
                         "context": context,
                     }
                 )
+                # 각 번역 후 오류 상태 업데이트
+                if state.get("has_error", False):
+                    has_error = True
 
                 translated_list.append(state["restored_text"])
 
-            return translated_list, state["has_error"]
+            return translated_list, has_error  # 최종 오류 상태 반환
         except Exception as e:
             self.logger.error(f"리스트 비동기 번역 중 오류 발생: {e}")
             return value, True

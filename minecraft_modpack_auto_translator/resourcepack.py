@@ -33,7 +33,12 @@ def normalize_glob_path(path):
     return "/".join(parts)
 
 
-def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation"):
+def create_resourcepack(
+    output_dir,
+    folder_list,
+    pack_name="Korean-Translation",
+    source_lang="en_us",
+):
     """
     번역된 내용으로 마인크래프트 리소스팩을 생성합니다.
 
@@ -129,11 +134,19 @@ def create_resourcepack(output_dir, folder_list, pack_name="Korean-Translation")
         for root, _, files in os.walk(resourcepack_dir):
             for file in files:
                 # .tmp 파일 건너뛰기
-                if file.endswith(".tmp"):
+                if (
+                    file.endswith(".tmp")
+                    or ".zip_extracted" in file
+                    or file.endswith(".converted")
+                ):
                     continue
                 file_path = os.path.join(root, file)
                 # 리소스팩 디렉토리를 기준으로 상대 경로 생성
                 arcname = os.path.relpath(file_path, resourcepack_dir)
+                arcname = arcname.replace(source_lang, "ko_kr").replace(
+                    source_lang.split("_")[0] + "_" + source_lang.split("_")[1].upper(),
+                    "ko_KR",
+                )
                 zipf.write(file_path, arcname)
                 logger.debug(f"압축: {file_path} -> {arcname}")
 

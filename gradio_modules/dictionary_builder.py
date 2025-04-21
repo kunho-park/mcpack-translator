@@ -102,6 +102,8 @@ def process_modpack_directory(
     """모드팩 디렉토리에서 번역 대상 파일을 찾습니다."""
     from gradio_modules.utils import get_supported_extensions
 
+    extact_all_zip_files(modpack_path)
+
     supported_exts = get_supported_extensions()
     src_lower = source_lang_code.lower()
     files = []
@@ -112,7 +114,11 @@ def process_modpack_directory(
             f = f.replace("\\", "/")
             ext = os.path.splitext(f)[1]
             if ext in supported_exts and any(d in f for d in DIR_FILTER_WHITELIST):
-                files.append(f)
+                if "lang/" in f:
+                    if ext in supported_exts and src_lower in f.lower():
+                        files.append(f)
+                else:
+                    files.append(f)
             elif ext in supported_exts and src_lower in f.lower():
                 files.append(f)
 
@@ -124,7 +130,11 @@ def process_modpack_directory(
             f = f.replace("\\", "/")
             ext = os.path.splitext(f)[1]
             if ext in supported_exts and any(d in f for d in DIR_FILTER_WHITELIST):
-                files.append(f)
+                if "lang/" in f:
+                    if ext in supported_exts and src_lower in f.lower():
+                        files.append(f)
+                else:
+                    files.append(f)
             elif ext in supported_exts and src_lower in f.lower():
                 files.append(f)
 
@@ -249,3 +259,52 @@ def build_dictionary_from_files(
                             added += 1
                 count += 1
     return translation_dictionary, translation_dictionary_lowercase, count, added
+
+
+def extact_all_zip_files(modpack_path):
+    zip_files = glob(
+        normalize_glob_path(os.path.join(modpack_path, "**", "*.zip")), recursive=True
+    )
+    for zip_file in zip_files:
+        with zipfile.ZipFile(zip_file, "r") as zf:
+            if "datapacks" in zip_file or "resourcepacks" in zip_file:
+                zip_file = zip_file.replace("\\", "/") + ".zip_extracted"
+                if os.path.exists(zip_file):
+                    logger.info(f"이미 추출된 파일: {zip_file}")
+                    continue
+
+                os.makedirs(zip_file, exist_ok=True)
+                zf.extractall(zip_file)
+    return zip_files
+
+
+def restore_zip_files(modpack_path, source_lang="en_us"):
+    """.zip_extracted 폴더들을 찾아 원본 zip 파일로 복구합니다."""
+    extracted_dirs = glob(
+        normalize_glob_path(os.path.join(modpack_path, "**", "*.zip_extracted")),
+        recursive=True,
+    )
+    for extracted_dir in extracted_dirs:
+        zip_path = extracted_dir.replace(".zip_extracted", "")  # .zip_extracted 제거
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, _, files in os.walk(extracted_dir):
+                for file in files:
+                    if (
+                        file.endswith(".tmp")
+                        or ".zip_extracted" in file
+                        or file.endswith(".converted")
+                    ):
+                        continue
+                    file_path = os.path.join(root, file)
+                    arcname = (
+                        os.path.relpath(file_path, extracted_dir)
+                        .replace(source_lang, "ko_kr")
+                        .replace(
+                            source_lang.split("_")[0]
+                            + "_"
+                            + source_lang.split("_")[1].upper(),
+                            "ko_KR",
+                        )
+                    )
+                    zf.write(file_path, arcname)
+    return extracted_dirs
