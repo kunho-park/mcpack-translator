@@ -266,7 +266,7 @@ def build_dictionary_from_files(
                                     translation_dictionary,
                                     translation_dictionary_lowercase,
                                 )
-                            added += 1
+                                added += 1
                     count += 1
             except Exception:
                 logger.error(f"기존 번역에서 파일 읽기 실패: {en_file}")
