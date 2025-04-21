@@ -83,7 +83,9 @@ class PatchouliBooksLoader(BaseLoader):
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
-            return value
+            return value, False
+
+        state = {"has_error": False}
 
         for page in value:
             if isinstance(page, dict):

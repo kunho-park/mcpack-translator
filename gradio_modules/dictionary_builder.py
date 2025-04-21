@@ -146,6 +146,7 @@ def process_modpack_directory(
         for jar in glob(jar_pattern):
             fingerprints[os.path.basename(jar)] = fingerprint_file(jar)
             with zipfile.ZipFile(jar, "r") as zf:
+                logger.info(f"Jar 압축 해제중: {jar}")
                 out_dir = os.path.join(
                     modpack_path,
                     "mods",

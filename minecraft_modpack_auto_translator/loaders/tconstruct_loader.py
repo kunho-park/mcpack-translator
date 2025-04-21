@@ -84,6 +84,7 @@ class TConstructBooksLoader(BaseLoader):
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
             return value
 
+        state = {"has_error": False}
         for text in value:
             if isinstance(text, dict):
                 for k in text.keys():
