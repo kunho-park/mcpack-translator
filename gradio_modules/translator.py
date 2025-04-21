@@ -73,22 +73,25 @@ async def run_json_translation(
         source_lang, os.getenv("LANG_CODE", "ko_kr")
     )
     if build_dict:
-        dict_init, dict_lower, added, _ = build_dictionary_from_files(
+        dict_init, dict_lower, count, added = build_dictionary_from_files(
             [fp["input"] for fp in file_pairs],
             os.getcwd(),
             dict_init,
             dict_lower,
             source_lang,
         )
-        logger_client.write(f"기존 번역에서 추가된 사전 항목: {added}개")
-
+        logger_client.write(
+            f"기존 번역에서 추가된 사전 항목: {added}개 ({count}개의 파일에서)"
+        )
     if custom_dictionary_path:
         dict_init, dict_lower = load_custom_dictionary(
             custom_dictionary_path, dict_init, dict_lower
         )
         logger_client.write("커스텀 사전 추가 완료")
 
+    pre_len = len(file_pairs)
     file_pairs = filter_korean_lang_files(file_pairs, source_lang)
+    logger_client.write(f"{pre_len - len(file_pairs)}개의 한글 번역 파일 건너뜀")
     # 워커들이 순환하며 사용할 API 키 이터레이터 생성
     key_cycle = itertools.cycle(api_keys)
 

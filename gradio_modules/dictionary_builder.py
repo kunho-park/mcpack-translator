@@ -8,8 +8,6 @@ from glob import glob
 
 from gradio_modules.utils import extract_lang_content
 from minecraft_modpack_auto_translator.config import (
-    DICTIONARY_PREFIX_WHITELIST,
-    DICTIONARY_SUFFIX_BLACKLIST,
     DIR_FILTER_WHITELIST,
     OFFICIAL_EN_LANG_FILE,
     OFFICIAL_KO_LANG_FILE,
@@ -237,7 +235,7 @@ def build_dictionary_from_files(
             "ko_KR",
         )
 
-        if os.path.exists(target):
+        if os.path.exists(target) and target != en_file:
             try:
                 en_data = extract_lang_content(en_file)
                 ko_data = extract_lang_content(target)
@@ -250,23 +248,23 @@ def build_dictionary_from_files(
                         ):
                             if ev == ko_data[key]:
                                 continue
-                            if (
-                                key.split(".")[0] in DICTIONARY_PREFIX_WHITELIST
-                                and key.split(".")[-1]
-                                not in DICTIONARY_SUFFIX_BLACKLIST
-                            ):
-                                clean_e = ev.replace("_", "")
-                                clean_k = ko_data[key].replace("_", "")
-                                (
-                                    translation_dictionary,
-                                    translation_dictionary_lowercase,
-                                ) = add_to_dictionary(
-                                    clean_e,
-                                    clean_k,
-                                    translation_dictionary,
-                                    translation_dictionary_lowercase,
-                                )
-                                added += 1
+                            # if (
+                            #     key.split(".")[0] in DICTIONARY_PREFIX_WHITELIST
+                            #     and key.split(".")[-1]
+                            #     not in DICTIONARY_SUFFIX_BLACKLIST
+                            # ):
+                            clean_e = ev.replace("_", "")
+                            clean_k = ko_data[key].replace("_", "")
+                            (
+                                translation_dictionary,
+                                translation_dictionary_lowercase,
+                            ) = add_to_dictionary(
+                                clean_e,
+                                clean_k,
+                                translation_dictionary,
+                                translation_dictionary_lowercase,
+                            )
+                            added += 1
                     count += 1
             except Exception:
                 logger.error(f"기존 번역에서 파일 읽기 실패: {en_file}")
