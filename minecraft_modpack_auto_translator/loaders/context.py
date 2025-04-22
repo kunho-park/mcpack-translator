@@ -56,16 +56,34 @@ class TranslationContext:
         global _GLOBAL_DICTIONARY, _GLOBAL_DICTIONARY_LOWERCASE
 
         try:
+            # ko_value가 리스트인 경우 flatten 처리
+            if isinstance(ko_value, list):
+                flattened_ko_values = []
+                for item in ko_value:
+                    if isinstance(item, list):
+                        flattened_ko_values.extend(item)
+                    else:
+                        flattened_ko_values.append(item)
+                ko_value = flattened_ko_values
+
             if en_value.lower() in _GLOBAL_DICTIONARY_LOWERCASE:
                 target_key = _GLOBAL_DICTIONARY_LOWERCASE[en_value.lower()]
                 target = _GLOBAL_DICTIONARY[target_key]
 
                 if isinstance(target, list):
-                    if ko_value not in target:
-                        _GLOBAL_DICTIONARY[target_key].append(ko_value)
+                    if isinstance(ko_value, list):
+                        for val in ko_value:
+                            if val not in target:
+                                _GLOBAL_DICTIONARY[target_key].append(val)
+                    else:
+                        if ko_value not in target:
+                            _GLOBAL_DICTIONARY[target_key].append(ko_value)
                 elif isinstance(target, str):
-                    if target != ko_value:
-                        _GLOBAL_DICTIONARY[target_key] = [target, ko_value]
+                    if isinstance(ko_value, list):
+                        _GLOBAL_DICTIONARY[target_key] = [target] + ko_value
+                    else:
+                        if target != ko_value:
+                            _GLOBAL_DICTIONARY[target_key] = [target, ko_value]
             else:
                 _GLOBAL_DICTIONARY[en_value] = ko_value
                 _GLOBAL_DICTIONARY_LOWERCASE[en_value.lower()] = en_value
