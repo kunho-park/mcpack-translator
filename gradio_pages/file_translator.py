@@ -7,6 +7,9 @@ import uuid
 import gradio as gr
 from langchain_core.rate_limiters import InMemoryRateLimiter
 
+from gradio_modules.dictionary_builder import (
+    initialize_translation_dictionary,
+)
 from gradio_modules.logger import Logger
 from minecraft_modpack_auto_translator.delay_manager import DelayManager
 from minecraft_modpack_auto_translator.graph import translate_json_file
@@ -20,6 +23,7 @@ def create_file_translator_ui(config_state):
         # 번역 옵션 패널
         with gr.Accordion("번역 옵션", open=True):
             uploaded_file = gr.File(label="번역할 파일 업로드")
+            source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
             file_split_number = gr.Number(label="파일 분할 작업자 수", value=1)
             use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
 
@@ -37,6 +41,7 @@ def create_file_translator_ui(config_state):
             file_split_number,
             use_random_order,
             config,
+            source_lang,
             pr=progress_bar,
         ):
             # Logger 초기화
@@ -130,6 +135,12 @@ def create_file_translator_ui(config_state):
                 num += 1
                 pr(num / total, desc="번역 중..")
 
+            logger_client.write(f"원본 언어 코드: {source_lang}")
+            dict_init, dict_lower = initialize_translation_dictionary(
+                source_lang, os.getenv("LANG_CODE", "ko_kr")
+            )
+            logger_client.write(f"사전 초기화 완료: {len(dict_init)}개")
+
             # 번역 실행
             try:
                 api_keys = config.get("api_keys", None)
@@ -141,7 +152,7 @@ def create_file_translator_ui(config_state):
                     translate_json_file(
                         input_path=tmp_in_path,
                         output_path=tmp_out_path,
-                        custom_dictionary_dict={},
+                        custom_dictionary_dict=dict_init,
                         llm=get_translator(
                             provider.lower(),
                             selected_api_key,
@@ -221,6 +232,7 @@ def create_file_translator_ui(config_state):
                 file_split_number,
                 use_random_order,
                 config_state,
+                source_lang,
             ],
             outputs=[progress_label, download_button],
         )
