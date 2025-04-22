@@ -129,6 +129,7 @@ async def run_json_translation(
             try:
                 in_path = pair["input"]
                 out_path = pair["output"]
+                data = pair["data"]
                 # 이미 번역된 파일 건너뛰기
                 if skip_translated and os.path.exists(out_path):
                     results.append(out_path)
@@ -162,6 +163,7 @@ async def run_json_translation(
                 await translate_json_file(
                     input_path=temp_json_in,
                     output_path=temp_json_out,
+                    data=data,
                     custom_dictionary_dict=context.get_dictionary(),
                     llm=llm_instance,
                     max_workers=int(file_split_number),

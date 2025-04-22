@@ -146,6 +146,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
                         "custom_dictionary_dict": custom_dictionary_dict,
                         "llm": llm,
                         "context": context,
+                        "translation_key": key,
                     }
                 )
                 return state["restored_text"], state["has_error"]
@@ -288,6 +289,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
                     "custom_dictionary_dict": custom_dictionary_dict,
                     "llm": llm,
                     "context": context,
+                    "translation_key": key,
                 }
             )
             value_dict["text"] = state["restored_text"]
@@ -299,6 +301,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
                     "custom_dictionary_dict": custom_dictionary_dict,
                     "llm": llm,
                     "context": context,
+                    "translation_key": key,
                 }
             )
             return state["restored_text"], state["has_error"]

@@ -95,6 +95,7 @@ class TConstructBooksLoader(BaseLoader):
                                 "custom_dictionary_dict": custom_dictionary_dict,
                                 "llm": llm,
                                 "context": context,
+                                "translation_key": k,
                             }
                         )
                         text[k] = state["restored_text"]

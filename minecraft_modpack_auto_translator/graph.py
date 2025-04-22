@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import json
 import logging
 import random
@@ -147,6 +146,7 @@ async def analyze_text(state):
         "extracted_entities": [],
         "context": context,
         "has_error": False,
+        "translation_key": state.get("translation_key", ""),
     }
 
 
@@ -345,6 +345,7 @@ async def translate_text(state):
                     "additional_rules",
                     "dictionary_instructions",
                     "translation_rules",
+                    "translation_key",
                 ],
             )
 
@@ -385,6 +386,7 @@ async def translate_text(state):
                         "additional_rules": additional_rules,
                         "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
                         "translation_rules": translation_rules,
+                        "translation_key": state["translation_key"],
                     },
                 )
             except Exception as api_error:
@@ -529,6 +531,7 @@ def create_translation_graph():
         llm: BaseChatModel
         restored_text: str
         context: TranslationContext
+        translation_key: str
 
     # 워크플로우 그래프 정의
     workflow = StateGraph(TranslationState)
@@ -592,6 +595,7 @@ async def translate_item(
 async def translate_json_file(
     input_path: str,
     output_path: str,
+    data: dict = {},
     custom_dictionary_dict: Dict = {},
     llm=None,
     max_workers: int = 5,
@@ -632,7 +636,7 @@ async def translate_json_file(
     translation_graph = create_translation_graph()
 
     # 번역 결과를 저장할 복사본 생성
-    translated_data = copy.deepcopy(data)
+    translated_data = {}
 
     # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
@@ -680,6 +684,14 @@ async def translate_json_file(
         while not queue.empty():
             try:
                 key, value = await queue.get()
+
+                try:
+                    get = translated_data[key]
+                    if get is None:
+                        continue
+                except KeyError:
+                    pass
+
                 key, translated_value, has_error = await translate_item(
                     input_path,
                     key,

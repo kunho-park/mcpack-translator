@@ -294,14 +294,18 @@ def create_modpack_translator_ui(config_state):
                                 for sf in share_files:
                                     if not sf.endswith(".tmp"):
                                         src_file = os.path.join(root, sf)
-                                        arc = os.path.join(
-                                            jar_name,
-                                            os.path.relpath(src_file, extract_path),
-                                        ).replace(
-                                            source_lang.split("_")[0]
-                                            + "_"
-                                            + source_lang.split("_")[1].upper(),
-                                            "ko_KR",
+                                        arc = (
+                                            os.path.join(
+                                                jar_name,
+                                                os.path.relpath(src_file, extract_path),
+                                            )
+                                            .replace(
+                                                source_lang.split("_")[0]
+                                                + "_"
+                                                + source_lang.split("_")[1].upper(),
+                                                "ko_KR",
+                                            )
+                                            .replace(source_lang, "ko_kr")
                                         )
                                         share_zf.write(src_file, arcname=arc)
 

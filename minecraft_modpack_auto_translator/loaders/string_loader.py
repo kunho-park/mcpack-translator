@@ -90,6 +90,7 @@ class StringLoader(BaseLoader):
                     "custom_dictionary_dict": context.custom_dictionary_dict,
                     "llm": llm,  # llm을 직접 state에 전달
                     "context": context,
+                    "translation_key": key,
                 }
             )
 

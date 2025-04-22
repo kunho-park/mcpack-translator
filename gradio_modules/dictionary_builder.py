@@ -274,10 +274,11 @@ def build_dictionary_from_files(
 
 
 def filter_korean_lang_files(files, source_lang_code):
-    return [
-        f
-        for f in files
-        if not os.path.exists(
+    """한글 번역 파일을 필터링합니다."""
+    filtered_files = []
+
+    for f in files:
+        ko_path = (
             f["input"]
             .replace(source_lang_code, "ko_kr")
             .replace(
@@ -287,8 +288,34 @@ def filter_korean_lang_files(files, source_lang_code):
                 "ko_KR",
             )
         )
-        or any(d in f["input"] for d in DIR_FILTER_WHITELIST)
-    ]
+        added = False
+        if not os.path.exists(ko_path) or any(
+            d in f["input"] for d in DIR_FILTER_WHITELIST
+        ):
+            if ko_path != f["input"]:
+                with open(ko_path, "r", encoding="utf-8") as f:
+                    parser = BaseParser.get_parser_by_extension(
+                        os.path.splitext(f["input"])[1]
+                    )
+                    ko_data = parser.load(f.read())
+                    if ko_data:
+                        added = True
+                        filtered_files.append(
+                            {
+                                "input": f["input"],
+                                "output": f["output"],
+                                "data": ko_data,
+                            }
+                        )
+        if not added:
+            filtered_files.append(
+                {
+                    "input": f["input"],
+                    "output": f["output"],
+                    "data": {},
+                }
+            )
+    return filtered_files
 
 
 def extact_all_zip_files(modpack_path):

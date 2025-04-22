@@ -100,6 +100,7 @@ class ListLoader(BaseLoader):
                         "custom_dictionary_dict": context.custom_dictionary_dict,
                         "llm": llm,
                         "context": context,
+                        "translation_key": key,
                     }
                 )
                 # 각 번역 후 오류 상태 업데이트

@@ -62,6 +62,7 @@ class PuffishSkillsLoader(BaseLoader):
                                 "text": page[k],
                                 "custom_dictionary_dict": custom_dictionary_dict,
                                 "context": context,
+                                "translation_key": k,
                             }
                         )
                         page[k] = state["restored_text"]
@@ -97,6 +98,7 @@ class PuffishSkillsLoader(BaseLoader):
                             "custom_dictionary_dict": custom_dictionary_dict,
                             "llm": llm,
                             "context": context,
+                            "translation_key": k,
                         }
                     )
                     value[k] = state["restored_text"]
@@ -107,6 +109,7 @@ class PuffishSkillsLoader(BaseLoader):
                     "custom_dictionary_dict": custom_dictionary_dict,
                     "llm": llm,
                     "context": context,
+                    "translation_key": key,
                 }
             )
             return state["restored_text"], state["has_error"]
