@@ -297,7 +297,7 @@ def filter_korean_lang_files(files, source_lang_code):
                     parser = BaseParser.get_parser_by_extension(
                         os.path.splitext(f["input"])[1]
                     )
-                    ko_data = parser.load(f.read())
+                    ko_data = parser.load(file.read())
                     if ko_data:
                         added = True
                         filtered_files.append(
