@@ -159,7 +159,7 @@ async def run_json_translation(
         await translate_json_file(
             input_path=temp_json_in,
             output_path=temp_json_out,
-            data=data,
+            ko_data=data,
             custom_dictionary_dict=context.get_dictionary(),
             llm=llm_instance,
             max_workers=int(file_split_number),

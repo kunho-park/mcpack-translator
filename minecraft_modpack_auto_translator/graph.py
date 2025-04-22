@@ -600,7 +600,7 @@ async def translate_item(
 async def translate_json_file(
     input_path: str,
     output_path: str,
-    data: dict = {},
+    ko_data: dict = {},
     custom_dictionary_dict: Dict = {},
     llm=None,
     max_workers: int = 5,
@@ -642,7 +642,7 @@ async def translate_json_file(
     translation_graph = create_translation_graph()
 
     # 번역 결과를 저장할 복사본 생성
-    translated_data = {}
+    translated_data = ko_data
 
     # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
