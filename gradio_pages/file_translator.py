@@ -26,6 +26,9 @@ def create_file_translator_ui(config_state):
             source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
             file_split_number = gr.Number(label="파일 분할 작업자 수", value=1)
             use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
+            force_keep_line_break = gr.Checkbox(
+                label="줄바꿈 강제 유지", value=False
+            )
 
         # UI 요소
         translate_btn = gr.Button("번역 시작")
@@ -42,6 +45,7 @@ def create_file_translator_ui(config_state):
             use_random_order,
             config,
             source_lang,
+            force_keep_line_break,
             pr=progress_bar,
         ):
             # Logger 초기화
@@ -167,6 +171,7 @@ def create_file_translator_ui(config_state):
                         use_random_order=use_random_order,
                         delay_manager=delay_manager,
                         progress_callback=progress_callback,
+                        force_keep_line_break=force_keep_line_break,
                     )
                 )
                 add_log("번역 완료")
@@ -233,6 +238,7 @@ def create_file_translator_ui(config_state):
                 use_random_order,
                 config_state,
                 source_lang,
+                force_keep_line_break,
             ],
             outputs=[progress_label, download_button],
         )

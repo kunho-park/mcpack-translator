@@ -102,7 +102,9 @@ def create_modpack_translator_ui(config_state):
                             label="파일 분할 작업자 수", value=1, maximum=5
                         )
                     use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=True)
-
+                    force_keep_line_break = gr.Checkbox(
+                        label="줄바꿈 강제 유지", value=False
+                    )
                     with gr.Row():
                         share_results = gr.Checkbox(
                             label="번역 결과 공유 (Discord)", value=True
@@ -139,6 +141,7 @@ def create_modpack_translator_ui(config_state):
             use_random_order,
             share_results,
             config,
+            force_keep_line_break,
             pr=pr,
         ):
             logger_client = Logger(config["log_file_path"])
@@ -220,6 +223,7 @@ def create_modpack_translator_ui(config_state):
                     else None,
                     progress_callback=progress_callback,
                     logger_client=logger_client,
+                    force_keep_line_break=force_keep_line_break,
                 )
             )
             # 진행률 완료
@@ -389,6 +393,7 @@ def create_modpack_translator_ui(config_state):
                 use_random_order,
                 share_results,
                 config_state,
+                force_keep_line_break,
             ],
             outputs=[progress_bar_box, download],
         )

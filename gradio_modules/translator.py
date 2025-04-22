@@ -32,6 +32,7 @@ async def run_json_translation(
     custom_dictionary_path=None,
     progress_callback=None,
     logger_client=None,
+    force_keep_line_break=False,
 ):
     """여러 JSON 파일을 비동기 큐로 번역하고 결과 경로 목록을 반환합니다."""
     total = len(file_pairs)
@@ -170,6 +171,7 @@ async def run_json_translation(
                     external_context=context,
                     use_random_order=use_random_order,
                     delay_manager=delay_manager,
+                    force_keep_line_break=force_keep_line_break,
                 )
                 # 변환: JSON -> 원본 포맷
                 with open(temp_json_out, "r", encoding="utf-8") as jf:

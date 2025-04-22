@@ -135,9 +135,14 @@ async def analyze_text(state):
     replaced_text, placeholder_map = extract_special_formats(text)
 
     # TranslationContext 객체가 있으면 사전 초기화
-    context = state.get("context")
+    context: TranslationContext = state.get("context")
     if context:
         context.initialize_dictionaries()
+
+    if context.force_keep_line_break:
+        newline_placeholder = "[P_NEWLINE]"
+        replaced_text = re.sub(r"\n", newline_placeholder, replaced_text)
+        placeholder_map[newline_placeholder] = "\n"
 
     return {
         "text": text,
@@ -603,6 +608,7 @@ async def translate_json_file(
     external_context=None,
     delay_manager: DelayManager = None,
     use_random_order: bool = False,
+    force_keep_line_break: bool = False,
 ):
     """
     JSON 파일을 비동기적으로 번역합니다.
@@ -651,6 +657,7 @@ async def translate_json_file(
             translation_graph=translation_graph,
             custom_dictionary_dict=custom_dictionary_dict,
             registry=registry,
+            force_keep_line_break=force_keep_line_break,
         )
 
     # 공유 사전 초기화
