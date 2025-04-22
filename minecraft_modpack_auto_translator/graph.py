@@ -367,7 +367,7 @@ async def translate_text(state):
                 )
                 new_dictionary_entries: List[DictionaryEntry] = Field(
                     default_factory=list,
-                    description="사전에 추가할 새로운 단어들",
+                    description="번역에 사용된 단어들 중, 사전에 추가할 새로운 단어들",
                 )
 
             parser = PydanticOutputParser(pydantic_object=TranslationResponse)
