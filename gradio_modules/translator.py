@@ -37,7 +37,6 @@ async def run_json_translation(
     """여러 JSON 파일을 비동기 큐로 번역하고 결과 경로 목록을 반환합니다."""
     total = len(file_pairs)
     completed_count = 0
-    lock = asyncio.Lock()
     provider = config["provider"]
     api_keys = config.get("api_keys", None)
     if api_keys is None or isinstance(api_keys, str):
@@ -98,8 +97,7 @@ async def run_json_translation(
 
     # LLM 인스턴스를 각 워커가 개별적으로 생성하도록 변경 (키 순환 사용)
     async def get_llm_instance_for_worker():
-        async with lock:  # Lock을 사용하여 순차적으로 키를 가져옴
-            selected_key = next(key_cycle)
+        selected_key = next(key_cycle)
         return get_translator(
             provider.lower(),
             selected_key,
@@ -117,83 +115,97 @@ async def run_json_translation(
 
     results = []
     queue = asyncio.Queue()
+    lock = asyncio.Lock()
     for pair in file_pairs:
-        await queue.put(pair)
+        queue.put_nowait(pair)
+
+    num = 0
+
+    async def process_file(pair):
+        nonlocal num
+        num += 1
+        in_path = pair["input"]
+        out_path = pair["output"]
+        data = pair["data"]
+
+        if skip_translated and os.path.exists(out_path):
+            results.append(out_path)
+            if logger_client:
+                await logger_client.awrite(f"이미 번역된 파일 건너뛰기: {out_path}")
+            return
+
+        # 임시 JSON 파일로 번역
+        temp_json_out = out_path + ".tmp"
+        temp_json_in = in_path + ".converted"
+        llm_instance = await get_llm_instance_for_worker()
+
+        ext = os.path.splitext(in_path)[1]
+        parser = BaseParser.get_parser_by_extension(ext)
+        with open(in_path, "rb") as f:
+            content_bytes = f.read()
+        try:
+            content_str = content_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            content_str = content_bytes.decode("utf-8", errors="ignore")
+        original_data = parser.load(content_str)
+        json_input = json.dumps(original_data, ensure_ascii=False, indent=4)
+
+        with open(temp_json_in, "w", encoding="utf-8") as of:
+            of.write(json_input)
+
+        if logger_client:
+            logger_client.write(f"번역 시작: {in_path}")
+
+        await translate_json_file(
+            input_path=temp_json_in,
+            output_path=temp_json_out,
+            data=data,
+            custom_dictionary_dict=context.get_dictionary(),
+            llm=llm_instance,
+            max_workers=int(file_split_number),
+            external_context=context,
+            use_random_order=use_random_order,
+            delay_manager=delay_manager,
+            force_keep_line_break=force_keep_line_break,
+        )
+        try:
+            if num % 100 == 0:
+                os.makedirs("./temp/")
+                path_for_shared_dict = os.path.join("./temp/last_shared_dict.json")
+                with open(path_for_shared_dict, "w", encoding="utf-8") as jf:
+                    json.dump(
+                        context.get_dictionary(), jf, ensure_ascii=False, indent=4
+                    )
+        except Exception as e:
+            if logger_client:
+                logger_client.write(f"Error for save shared dict: {e}")
+            return
+        # 변환: JSON -> 원본 포맷
+        # 파서로 저장
+        content = parser.save(data)
+        # 최종 파일 저장
+        with open(out_path, "w", encoding="utf-8") as of:
+            of.write(content)
+
+        results.append(out_path)
+        if logger_client:
+            logger_client.write(f"번역 완료: {out_path}")
 
     async def worker():
         nonlocal completed_count
-        while True:
+        while not queue.empty():
+            pair = await queue.get()
+
             try:
-                pair = queue.get_nowait()
-            except asyncio.QueueEmpty:
-                break
-            try:
-                in_path = pair["input"]
-                out_path = pair["output"]
-                data = pair["data"]
-                # 이미 번역된 파일 건너뛰기
-                if skip_translated and os.path.exists(out_path):
-                    results.append(out_path)
-                    if logger_client:
-                        await logger_client.awrite(
-                            f"이미 번역된 파일 건너뛰기: {out_path}"
-                        )
-                    continue
-                # 임시 JSON 파일로 번역
-                temp_json_out = out_path + ".tmp"
-                temp_json_in = in_path + ".converted"
-                llm_instance = await get_llm_instance_for_worker()
-
-                ext = os.path.splitext(in_path)[1]
-                parser = BaseParser.get_parser_by_extension(ext)
-                with open(in_path, "rb") as f:
-                    content_bytes = f.read()
-                try:
-                    content_str = content_bytes.decode("utf-8")
-                except UnicodeDecodeError:
-                    content_str = content_bytes.decode("utf-8", errors="ignore")
-                original_data = parser.load(content_str)
-                json_input = json.dumps(original_data, ensure_ascii=False, indent=4)
-
-                with open(temp_json_in, "w", encoding="utf-8") as of:
-                    of.write(json_input)
-
-                if logger_client:
-                    await logger_client.awrite(f"번역 시작: {in_path}")
-
-                await translate_json_file(
-                    input_path=temp_json_in,
-                    output_path=temp_json_out,
-                    data=data,
-                    custom_dictionary_dict=context.get_dictionary(),
-                    llm=llm_instance,
-                    max_workers=int(file_split_number),
-                    external_context=context,
-                    use_random_order=use_random_order,
-                    delay_manager=delay_manager,
-                    force_keep_line_break=force_keep_line_break,
-                )
-                # 변환: JSON -> 원본 포맷
-                with open(temp_json_out, "r", encoding="utf-8") as jf:
-                    data = json.load(jf)
-                # 파서로 저장
-                content = parser.save(data)
-                # 최종 파일 저장
-                with open(out_path, "w", encoding="utf-8") as of:
-                    of.write(content)
-
-                results.append(out_path)
-                if logger_client:
-                    await logger_client.awrite(f"번역 완료: {out_path}")
+                await process_file(pair)
             except Exception as e:
-                # 예외 로깅 또는 처리 (선택 사항)
                 if logger_client:
-                    await logger_client.awrite(f"Error processing {pair}: {e}")
+                    logger_client.write(f"Error processing {pair}: {e}")
             finally:
-                # 예외 발생 여부와 관계없이 항상 task_done() 호출
-                completed_count += 1
-                if progress_callback:
-                    await progress_callback((completed_count, total))
+                async with lock:
+                    completed_count += 1
+                    if progress_callback:
+                        await progress_callback((completed_count, total))
                 queue.task_done()
 
     # 워커 태스크 실행

@@ -684,9 +684,11 @@ async def translate_json_file(
     dict_save_lock = asyncio.Lock()
     last_save_size = len(context.get_dictionary())
 
+    error_list = []
+
     # Worker 함수 정의
     async def worker(worker_id: int):
-        nonlocal last_save_size
+        nonlocal last_save_size, error_list
 
         while not queue.empty():
             try:
@@ -698,6 +700,8 @@ async def translate_json_file(
                         continue
                 except KeyError:
                     pass
+                # 큐 길이 로깅 (디버깅용)
+                logger.debug(f"Worker {worker_id}: 현재 큐 길이 - {queue.qsize()}")
 
                 key, translated_value, has_error = await translate_item(
                     input_path,
@@ -711,7 +715,8 @@ async def translate_json_file(
                 if not has_error:
                     translated_data[key] = translated_value
                     queue.task_done()
-
+                else:
+                    error_list.append((input_path, key, value, translated_value))
                 # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
                 current_dict_size = len(context.get_dictionary())
                 if current_dict_size - last_save_size >= 100:
