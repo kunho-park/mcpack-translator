@@ -700,10 +700,6 @@ async def translate_json_file(
                         continue
                 except KeyError:
                     pass
-                # 큐 길이 로깅 (디버깅용)
-                logger.info(
-                    f"Worker {worker_id}: 남은 개수 - {queue.qsize()}/{len(data)}"
-                )
 
                 key, translated_value, has_error = await translate_item(
                     input_path,
@@ -716,7 +712,6 @@ async def translate_json_file(
                 )
                 if not has_error:
                     translated_data[key] = translated_value
-                    queue.task_done()
                 else:
                     error_list.append((input_path, key, value, translated_value))
                 # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
@@ -743,6 +738,7 @@ async def translate_json_file(
 
             except Exception as e:
                 logger.error(f"Worker {worker_id} 오류: {e}")
+            finally:
                 queue.task_done()
 
     # Worker 시작

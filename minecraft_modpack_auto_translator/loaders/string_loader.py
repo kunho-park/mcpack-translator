@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import Any
 
 from .base_loader import BaseLoader
@@ -97,4 +98,5 @@ class StringLoader(BaseLoader):
             return state["restored_text"], state["has_error"]
         except Exception as e:
             self.logger.error(f"문자열 번역 중 오류 발생: {e}")
+            print(traceback.format_exc())
             return value, True
