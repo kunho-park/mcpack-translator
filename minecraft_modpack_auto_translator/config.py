@@ -186,21 +186,25 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
 5. **다른 언어 사용 엄격 금지**
    - 번역 결과는 반드시 **한국어** 또는 **영어**로만 작성해야 합니다.
    - 중국어, 일본어, 프랑스어 등 다른 언어는 절대 사용하지 마세요.
-   - 예외적으로 게임 내 고유명사나 브랜드명 등은 원어 그대로 표기할 수 있습니다.
-     - 예: "Sakura" → "사쿠라" (X, 원어 유지) / "Sakura" → "Sakura" (O)
    - 영어를 한국어로 번역할 때는 완전한 한국어 문장을 사용해야 합니다.
      - 예: "Open Inventory" → "인벤토리 열기" (O)
      - 예: "Open Inventory" → "Open 인벤토리" (X, 혼합 사용 금지)
 </translation_rules>"""
-
-DICTIONARY_INSTRUCTIONS = """1. 번역 중 중요하다고 생각되는 용어를 발견하면 `new_dictionary_entries` 목록에 추가해 주세요.
-2. 한국어 번역(`ko`) 항목에는 실제 번역에 사용된 단어를 넣어주세요.
+DICTIONARY_INSTRUCTIONS = """1. 사전에 추가할 중요 용어 발견 시 `new_dictionary_entries` 목록에 등록해주세요.
+2. `ko` 필드에는 실제 적용된 한국어 번역어를 기입하세요.
+3. 영어-한글 혼용은 엄격히 금지합니다 (예: "Crafting Table" → "크래프팅 테이블" (O), "크래프팅 Table" (X))
+4. 전문 용어/고유명사는 원어 발음에 충실한 한글 음차를 우선 적용하세요.
+   - 예: "Thermal Expansion" → "써멀 익스팬션"
+5. 필요한 경우 국제적으로 통용되는 용어/브랜드명은 영어 원형 유지 가능
+   - 예: "ID" → "ID" (O)
+6. 사전 등록 시 단어/구 단위로 등록하고 문장 형태는 지양하세요.
 
 올바른 예시:
 O {"en": "Iridium", "ko": "이리듐"}
-O {"en": "Iridium", "ko": "Iridium"}
+O {"en": "Group ID", "ko": "그룹 ID"}
 
 잘못된 예시:
+X {"en": "Group ID", "ko": "Group ID"} (영어를 최소한으로 유지하세요.)
 X {"en": "Crafting Table Recipe", "ko": "제작대 레시피"} (문장 형태는 지양해주세요.)"""
 
 DICTIONARY_PREFIX_WHITELIST = [
