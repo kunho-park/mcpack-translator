@@ -285,9 +285,16 @@ async def translate_text(state):
         # 사전 항목 추가
         if len(key) >= 3:
             if key.lower() in text_replaced_with_korean_dictionary.lower():
-                dictionary_entries.append(
-                    f"{key} -> {', '.join(item) if isinstance(item, list) else item}"
-                )
+                try:
+                    dictionary_entries.append(
+                        f"{key} -> {', '.join(item) if isinstance(item, list) else item}"
+                    )
+                except Exception as e:
+                    logger.error(f"사전 항목 추가 중 오류 발생: {e} ({key}, {item})")
+                    try:
+                        dictionary_entries.append(f"{key} -> {item}")
+                    except Exception as e:
+                        pass
                 temp_token = f"[TP{placeholder_idx}]"
                 text_replaced_with_korean_dictionary = re.sub(
                     re.escape(key),
