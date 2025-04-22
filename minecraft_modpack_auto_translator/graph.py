@@ -701,7 +701,9 @@ async def translate_json_file(
                 except KeyError:
                     pass
                 # 큐 길이 로깅 (디버깅용)
-                logger.debug(f"Worker {worker_id}: 현재 큐 길이 - {queue.qsize()}")
+                logger.info(
+                    f"Worker {worker_id}: 남은 개수 - {queue.qsize()}/{len(data)}"
+                )
 
                 key, translated_value, has_error = await translate_item(
                     input_path,
