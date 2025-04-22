@@ -328,13 +328,16 @@ def extact_all_zip_files(modpack_path):
     for zip_file in zip_files:
         with zipfile.ZipFile(zip_file, "r") as zf:
             if "datapacks" in zip_file or "resourcepacks" in zip_file:
-                zip_file = zip_file.replace("\\", "/") + ".zip_extracted"
-                if os.path.exists(zip_file):
+                zip_file_edited = zip_file.replace("\\", "/") + ".zip_extracted"
+                if os.path.exists(zip_file_edited):
                     logger.info(f"이미 추출된 파일: {zip_file}")
                     continue
 
-                os.makedirs(zip_file, exist_ok=True)
-                zf.extractall(zip_file)
+                os.makedirs(zip_file_edited, exist_ok=True)
+                try:
+                    zf.extractall(zip_file_edited)
+                except Exception:
+                    logger.error(f"zip 파일 추출 실패: {zip_file}")
     return zip_files
 
 
