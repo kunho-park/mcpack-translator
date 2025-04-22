@@ -87,9 +87,7 @@ DICTIONARY_BLACKLIST = [
 TEMPLATE_TRANSLATE_TEXT = """\
 당신은 **게임 로컬라이제이션 전문가**입니다. 아래 가이드라인을 100% 준수하여 번역 프롬프트를 작성하세요.
 
-<translation_rules>
 {translation_rules}
-</translation_rules>
 
 <dictionary_instructions>
 {dictionary_instructions}
@@ -131,15 +129,15 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
    - 제공된 용어집을 참고하되, **문맥에 맞게 수정**하여 사용하세요.  
    - 용어집에 없는 단어는 **자연스러운 한국어**로 번역하세요.
 
-5. **영어와 한국어의 혼용**  
+5. **영어와 한국어의 혼용 금지**  
    - **영어와 한국어를 혼합하여 사용하는 것은 엄격히 금지됩니다.**  
    - 꼭 영어로 사용해야 하는 경우가 아니라면 한국어를 사용하세요.
      - 잘못된 번역 예시:  
-       - "Enter your name" → "이름을 enter하세요" 
-       - "Press Start" → "start합니다"  
+       - `Enter your name` → `이름을 enter하세요` 
+       - `Press Start` → `start합니다`  
      - 올바른 번역 예시:  
-       - "Enter your name" → "이름을 입력하세요" (완전한 한국어)  
-       - "Press Start" → "시작 버튼을 누르세요" (문맥에 맞는 자연스러운 한국어)
+       - `Enter your name` → `이름을 입력하세요` (완전한 한국어)  
+       - `Press Start` → `시작 버튼을 누르세요` (문맥에 맞는 자연스러운 한국어)
 </translation_rules>
 
 <placeholders_rules>
@@ -170,11 +168,11 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
    - **영어와 한국어를 혼합하여 사용하는 것은 엄격히 금지됩니다.**  
    - 꼭 영어로 사용해야 하는 경우가 아니라면 한국어를 사용하세요.
      - 잘못된 번역 예시:  
-       - "Enter your name" → "이름을 enter하세요" 
-       - "Press Start" → "start합니다"  
+       - `Enter your name` → `이름을 enter하세요` 
+       - `Press Start` → `start합니다`  
      - 올바른 번역 예시:  
-       - "Enter your name" → "이름을 입력하세요" (완전한 한국어)  
-       - "Press Start" → "시작 버튼을 누르세요" (문맥에 맞는 자연스러운 한국어)
+       - `Enter your name` → `이름을 입력하세요` (완전한 한국어)  
+       - `Press Start` → `시작 버튼을 누르세요` (문맥에 맞는 자연스러운 한국어)
 </translation_rules>"""
 
 DICTIONARY_INSTRUCTIONS = """1. 번역 중 중요하다고 생각되는 용어를 발견하면 `new_dictionary_entries` 목록에 추가해 주세요.
