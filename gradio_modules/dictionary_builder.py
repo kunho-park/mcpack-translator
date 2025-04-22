@@ -293,7 +293,7 @@ def filter_korean_lang_files(files, source_lang_code):
             d in f["input"] for d in DIR_FILTER_WHITELIST
         ):
             if ko_path != f["input"]:
-                with open(ko_path, "r", encoding="utf-8") as f:
+                with open(ko_path, "r", encoding="utf-8") as file:
                     parser = BaseParser.get_parser_by_extension(
                         os.path.splitext(f["input"])[1]
                     )
