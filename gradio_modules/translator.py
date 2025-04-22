@@ -126,7 +126,7 @@ async def run_json_translation(
         nonlocal last_save_time
         in_path = pair["input"]
         out_path = pair["output"]
-        data = pair["data"]
+        ko_data = pair["data"]
 
         if skip_translated and os.path.exists(out_path):
             results.append(out_path)
@@ -159,7 +159,7 @@ async def run_json_translation(
         await translate_json_file(
             input_path=temp_json_in,
             output_path=temp_json_out,
-            ko_data=data,
+            ko_data=ko_data,
             custom_dictionary_dict=context.get_dictionary(),
             llm=llm_instance,
             max_workers=int(file_split_number),
@@ -182,8 +182,9 @@ async def run_json_translation(
             if logger_client:
                 logger_client.write(f"Error for save shared dict: {e}")
             return
-        # 변환: JSON -> 원본 포맷
-        # 파서로 저장
+
+        with open(temp_json_out, "r", encoding="utf-8") as f:
+            data = json.load(f)
         content = parser.save(data)
         # 최종 파일 저장
         with open(out_path, "w", encoding="utf-8") as of:
