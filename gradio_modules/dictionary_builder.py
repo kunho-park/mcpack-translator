@@ -289,7 +289,7 @@ def filter_korean_lang_files(files, source_lang_code):
             )
         )
         added = False
-        if not os.path.exists(ko_path) or any(
+        if os.path.exists(ko_path) or any(
             d in f["input"] for d in DIR_FILTER_WHITELIST
         ):
             if ko_path != f["input"]:
