@@ -701,9 +701,10 @@ async def translate_json_file(
             try:
                 key, value = await queue.get()
 
-                if ko_data.get(key, None) is not None:
-                    logger.warning(f"한글 공식 번역 존재로 번역 건너뜀: {key}")
-                    continue
+                if ko_data.get(key) is not None:
+                    if ko_data[key] != value:
+                        logger.warning(f"한글 공식 번역 존재로 번역 건너뜀: {key}")
+                        continue
 
                 key, translated_value, has_error = await translate_item(
                     input_path,
@@ -717,6 +718,7 @@ async def translate_json_file(
                 if not has_error:
                     translated_data[key] = translated_value
                 else:
+                    logger.error(f"번역 오류 발생: {key} / {value}")
                     error_list.append((input_path, key, value, translated_value))
                 # 사전 크기 확인 및 중간 저장 (사전 항목이 10개 이상 추가되면)
                 current_dict_size = len(context.get_dictionary())
