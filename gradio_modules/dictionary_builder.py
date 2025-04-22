@@ -101,7 +101,10 @@ def process_modpack_directory(
     """모드팩 디렉토리에서 번역 대상 파일을 찾습니다."""
     from gradio_modules.utils import get_supported_extensions
 
-    extact_all_zip_files(modpack_path)
+    try:
+        extact_all_zip_files(modpack_path)
+    except Exception:
+        logger.error(f"데이터팩, 리소스팩 zip 파일 추출 실패: {modpack_path}")
 
     supported_exts = get_supported_extensions()
     src_lower = source_lang_code.lower()
