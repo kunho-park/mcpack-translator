@@ -701,12 +701,8 @@ async def translate_json_file(
             try:
                 key, value = await queue.get()
 
-                try:
-                    get = translated_data[key]
-                    if get is None:
-                        continue
-                except KeyError:
-                    pass
+                if translated_data.get(key, None) is None:
+                    continue
 
                 key, translated_value, has_error = await translate_item(
                     input_path,

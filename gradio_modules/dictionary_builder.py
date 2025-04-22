@@ -257,6 +257,8 @@ def build_dictionary_from_files(
             + source_lang_code.split("_")[1].upper(),
             "ko_KR",
         )
+        if "Ponder-Forge-1.20.1-1.0.0.jar" in en_file:
+            print(target)
 
         if os.path.exists(target) and target != en_file:
             try:
