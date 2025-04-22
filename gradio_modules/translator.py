@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import json
 import os
+import time
 
 from langchain_core.rate_limiters import InMemoryRateLimiter
 
@@ -119,11 +120,10 @@ async def run_json_translation(
     for pair in file_pairs:
         queue.put_nowait(pair)
 
-    num = 0
+    last_save_time = time.time()
 
     async def process_file(pair):
-        nonlocal num
-        num += 1
+        nonlocal last_save_time
         in_path = pair["input"]
         out_path = pair["output"]
         data = pair["data"]
@@ -169,13 +169,15 @@ async def run_json_translation(
             force_keep_line_break=force_keep_line_break,
         )
         try:
-            if num % 100 == 0:
-                os.makedirs("./temp/")
+            current_time = time.time()
+            if current_time - last_save_time >= 300:  # 5분(300초)마다 저장
+                os.makedirs("./temp/", exist_ok=True)
                 path_for_shared_dict = os.path.join("./temp/last_shared_dict.json")
                 with open(path_for_shared_dict, "w", encoding="utf-8") as jf:
                     json.dump(
                         context.get_dictionary(), jf, ensure_ascii=False, indent=4
                     )
+                last_save_time = current_time  # 마지막 저장 시간 업데이트
         except Exception as e:
             if logger_client:
                 logger_client.write(f"Error for save shared dict: {e}")
