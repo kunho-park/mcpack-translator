@@ -702,6 +702,7 @@ async def translate_json_file(
                 key, value = await queue.get()
 
                 if translated_data.get(key, None) is None:
+                    logger.warning(f"한글 공식 번역 존재로 번역 건너뜀: {key}")
                     continue
 
                 key, translated_value, has_error = await translate_item(
