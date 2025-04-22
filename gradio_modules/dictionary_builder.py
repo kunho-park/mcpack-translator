@@ -70,9 +70,15 @@ def load_custom_dictionary(
         with open(custom_dict_file, "r", encoding="utf-8") as f:
             data = json.load(f)
         for en, ko in data.items():
-            add_to_dictionary(
-                en, ko, translation_dictionary, translation_dictionary_lowercase
-            )
+            if isinstance(ko, list):
+                for k in ko:
+                    add_to_dictionary(
+                        en, k, translation_dictionary, translation_dictionary_lowercase
+                    )
+            else:
+                add_to_dictionary(
+                    en, ko, translation_dictionary, translation_dictionary_lowercase
+                )
     return translation_dictionary, translation_dictionary_lowercase
 
 
