@@ -649,7 +649,7 @@ async def translate_json_file(
     translation_graph = create_translation_graph()
 
     # 번역 결과를 저장할 복사본 생성
-    translated_data = ko_data
+    translated_data = {}
 
     # 진행 상황 표시
     logger.info(f"총 {len(data)}개 항목 번역 시작...")
@@ -695,13 +695,13 @@ async def translate_json_file(
 
     # Worker 함수 정의
     async def worker(worker_id: int):
-        nonlocal last_save_size, error_list
+        nonlocal last_save_size, error_list, ko_data
 
         while not queue.empty():
             try:
                 key, value = await queue.get()
 
-                if translated_data.get(key, None) is None:
+                if ko_data.get(key, None) is not None:
                     logger.warning(f"한글 공식 번역 존재로 번역 건너뜀: {key}")
                     continue
 
