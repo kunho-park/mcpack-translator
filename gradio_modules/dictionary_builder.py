@@ -163,6 +163,7 @@ def process_modpack_directory(
                     os.path.basename(jar),
                 )
                 os.makedirs(out_dir, exist_ok=True)
+                is_extracted = False
                 for entry in zf.namelist():
                     if os.path.splitext(entry)[1].lower() in (
                         ".sbnt",
@@ -174,14 +175,16 @@ def process_modpack_directory(
                     ):
                         try:
                             zf.extract(entry, out_dir)
+                            is_extracted = True
                         except Exception:
                             logger.error(f"JAR 파일에서 추출 실패: {entry} ({jar})")
-                for entry in zf.namelist():
-                    if os.path.splitext(entry)[1] in supported_exts and (
-                        any(d in entry for d in DIR_FILTER_WHITELIST)
-                        or src_lower in entry.lower()
-                    ):
-                        files.append(os.path.join(out_dir, entry))
+                if is_extracted:
+                    for entry in zf.namelist():
+                        if os.path.splitext(entry)[1] in supported_exts and (
+                            any(d in entry for d in DIR_FILTER_WHITELIST)
+                            or src_lower in entry.lower()
+                        ):
+                            files.append(os.path.join(out_dir, entry))
             jar_files.append(jar)
 
     logger.info(f"찾은 파일: {len(files)}개 (mods 처리)")
