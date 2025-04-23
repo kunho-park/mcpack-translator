@@ -780,4 +780,4 @@ async def translate_json_file(
             logger.error(f"백업 저장 중 오류 발생: {backup_save_error}")
 
     # 최종 번역 사전 반환
-    return context.get_dictionary()
+    return error_list

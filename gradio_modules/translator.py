@@ -121,9 +121,10 @@ async def run_json_translation(
         queue.put_nowait(pair)
 
     last_save_time = time.time()
+    total_error_list = []
 
     async def process_file(pair):
-        nonlocal last_save_time
+        nonlocal last_save_time, total_error_list
         in_path = pair["input"]
         out_path = pair["output"]
         ko_data = pair["data"]
@@ -156,7 +157,7 @@ async def run_json_translation(
         if logger_client:
             logger_client.write(f"번역 시작: {in_path}")
 
-        await translate_json_file(
+        error_list = await translate_json_file(
             input_path=temp_json_in,
             output_path=temp_json_out,
             ko_data=ko_data,
@@ -168,6 +169,7 @@ async def run_json_translation(
             delay_manager=delay_manager,
             force_keep_line_break=force_keep_line_break,
         )
+        total_error_list.extend(error_list)
         try:
             current_time = time.time()
             if current_time - last_save_time >= 300:  # 5분(300초)마다 저장
@@ -210,6 +212,15 @@ async def run_json_translation(
                     if progress_callback:
                         await progress_callback((completed_count, total))
                 queue.task_done()
+
+    if len(total_error_list) > 0:
+        logger_client.write("\n\n" + "=" * 10)
+        logger_client.write(f"번역 오류가 {len(total_error_list)}개 발생했습니다.")
+        logger_client.write("오류 목록을 ./temp/error_list.json 에 저장했습니다.")
+        logger_client.write("오류 목록을 확인하고 오류 수정 후 다시 번역해주세요.")
+        with open("./temp/error_list.json", "w", encoding="utf-8") as f:
+            json.dump(total_error_list, f, ensure_ascii=False, indent=4)
+        logger_client.write("=" * 10 + "\n\n")
 
     # 워커 태스크 실행
     workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
