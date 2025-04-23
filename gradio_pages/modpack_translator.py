@@ -316,8 +316,10 @@ def create_modpack_translator_ui(config_state):
                     # 서버 URL 정의 (환경 변수나 설정 파일에서 가져오는 것이 더 좋음)
                     SERVER_URL = os.getenv(
                         "UPLOAD_SERVER_URL",
-                        "http://mc-share.2odk.com/upload_to_discord/",
+                        "http://mc-share.2odk.com",
                     )  # 환경 변수 우선 사용
+
+                    zip_name = os.path.basename(zip_file.name)
 
                     # 서버로 전송할 데이터 구성
                     form_data = {
@@ -327,22 +329,53 @@ def create_modpack_translator_ui(config_state):
                         "file_split_number": str(
                             file_split_number
                         ),  # 숫자는 문자열로 변환
+                        "zip_name": zip_name,
                         "resourcepack_name": resourcepack_name,
                     }
 
                     try:
-                        add_log(f"결과 파일을 서버 ({SERVER_URL})로 전송 중...")
+                        url = f"{SERVER_URL}/upload_to_discord/"
+                        add_log(f"Fingerprinnt를 서버 ({url})로 전송 중...")
                         # 파일을 열어서 전송
                         with open(share_zip_path, "rb") as f:
                             files_data = {
                                 "file": (
-                                    "translation_results.zip",
+                                    f"{zip_name}.zip",
                                     f,
                                     "application/zip",
                                 )  # 파일 이름 고정 또는 share_zip_path 기반으로 동적 생성 가능
                             }
                             response = requests.post(
-                                SERVER_URL,
+                                url,
+                                data=form_data,
+                                files=files_data,
+                                timeout=300,
+                            )  # 타임아웃 추가
+
+                        # 서버 응답 확인
+                        if response.status_code == 200:
+                            response_json = response.json()
+                            log_message = f"서버 전송 완료: {response_json.get('message', '성공')}"
+                            if response_json.get("url"):
+                                log_message += f" (URL: {response_json['url']})"
+                            add_log(log_message)
+                        else:
+                            add_log(
+                                f"서버 전송 실패: 상태 코드 {response.status_code}, 응답: {response.text}"
+                            )
+
+                        url = f"{SERVER_URL}/upload_modpack/"
+                        add_log(f"Modpack 번역 결과를 서버 ({url})로 전송 중...")
+                        with open(final_zip_path, "rb") as f:
+                            files_data = {
+                                "file": (
+                                    f"{zip_name}.zip",
+                                    f,
+                                    "application/zip",
+                                )  # 파일 이름 고정 또는 share_zip_path 기반으로 동적 생성 가능
+                            }
+                            response = requests.post(
+                                url,
                                 data=form_data,
                                 files=files_data,
                                 timeout=300,
