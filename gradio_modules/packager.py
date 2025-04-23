@@ -1,9 +1,12 @@
 import asyncio
 import io
+import logging
 import os
 import zipfile
 
 from minecraft_modpack_auto_translator.resourcepack import create_resourcepack
+
+logger = logging.getLogger(__name__)
 
 
 async def package_categories(
@@ -30,23 +33,27 @@ async def package_categories(
     async def worker():
         while not queue.empty():
             category, info = await queue.get()
-            pack_path = create_resourcepack(
-                output_dir,
-                [
-                    os.path.join(output_dir, category)
-                    if category != "mods"
-                    else os.path.join(output_dir, category, "extracted")
-                ],
-                resourcepack_name + info.get("suffix", ""),
-            )
-            created_packs.append(
-                {
-                    "category": category,
-                    "info": info,
-                    "path": pack_path,
-                }
-            )
-            queue.task_done()
+            try:
+                pack_path = create_resourcepack(
+                    output_dir,
+                    [
+                        os.path.join(output_dir, category)
+                        if category != "mods"
+                        else os.path.join(output_dir, category, "extracted")
+                    ],
+                    resourcepack_name + info.get("suffix", ""),
+                )
+                created_packs.append(
+                    {
+                        "category": category,
+                        "info": info,
+                        "path": pack_path,
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error creating resourcepack: {e}")
+            finally:
+                queue.task_done()
 
     # 워커 수는 큐 크기 또는 1 이상으로
     worker_count = max(queue.qsize(), 1)
