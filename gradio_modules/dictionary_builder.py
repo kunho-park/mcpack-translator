@@ -313,9 +313,7 @@ def filter_korean_lang_files(files, source_lang_code):
             )
         )
         added = False
-        if os.path.exists(ko_path) or any(
-            d in f["input"] for d in DIR_FILTER_WHITELIST
-        ):
+        if os.path.exists(ko_path):
             if ko_path != f["input"]:
                 with open(ko_path, "r", encoding="utf-8") as file:
                     parser = BaseParser.get_parser_by_extension(
