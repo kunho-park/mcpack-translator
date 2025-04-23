@@ -84,49 +84,61 @@ def create_resourcepack(
             if not os.path.exists(folder):
                 logger.warning(f"폴더 또는 파일이 존재하지 않습니다: {folder}")
                 continue
-            if "mods" in folder:
-                extracted_glob_path = normalize_glob_path(os.path.join(folder, "*"))
+
+            # 경로 정규화
+            normalized_folder = os.path.normpath(folder)
+
+            if "mods" in normalized_folder:
+                extracted_glob_path = normalize_glob_path(
+                    os.path.join(normalized_folder, "*")
+                )
                 for path in glob(extracted_glob_path, recursive=True):
-                    # 모드 추출 파일을 리소스팩 디렉토리로 복사
-                    # 대상 디렉토리가 이미 존재하는 경우 오류가 발생할 수 있으므로
-                    # 파일별로 복사 진행
-                    # glob을 사용하여 모든 파일 찾기
+                    if not os.path.exists(path):
+                        continue
+
                     path_glob = normalize_glob_path(os.path.join(path, "**", "*"))
                     for src_file in glob(path_glob, recursive=True):
                         if os.path.isfile(src_file):
-                            # 원본 경로에서 상대 경로 추출
                             rel_path = os.path.relpath(src_file, path)
                             dst_file = os.path.join(resourcepack_dir, rel_path)
 
-                            # 대상 디렉토리 생성
-                            os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+                            # 대상 디렉토리 존재 확인 후 생성
+                            dst_dir = os.path.dirname(dst_file)
+                            if not os.path.exists(dst_dir):
+                                os.makedirs(dst_dir, exist_ok=True)
 
-                            # 파일 복사
                             shutil.copy2(src_file, dst_file)
-            elif "kubejs" in folder or "config" in folder:
+
+            elif "kubejs" in normalized_folder or "config" in normalized_folder:
                 folder_glob_path = normalize_glob_path(
-                    os.path.join(folder, "**", "*.*")
+                    os.path.join(normalized_folder, "**", "*.*")
                 )
                 for path in glob(folder_glob_path, recursive=True):
-                    normalized_path = path.replace("\\", "/")
-                    normalized_folder = folder.replace("\\", "/")
-                    relative_path = normalized_path.split(normalized_folder)[1]
-                    if relative_path.startswith("/"):
-                        relative_path = relative_path[1:]
+                    if not os.path.exists(path):
+                        continue
 
-                    # 대상 경로 생성
+                    # 경로 정규화 및 상대 경로 계산
+                    normalized_path = os.path.normpath(path).replace("\\", "/")
+                    base_folder = os.path.normpath(normalized_folder).replace("\\", "/")
+                    relative_path = (
+                        normalized_path[len(base_folder) + 1 :]
+                        if normalized_path.startswith(base_folder)
+                        else normalized_path
+                    )
+
                     to_copy_path = os.path.join(resourcepack_dir, relative_path)
-                    os.makedirs(os.path.dirname(to_copy_path), exist_ok=True)
+                    dst_dir = os.path.dirname(to_copy_path)
+
+                    if not os.path.exists(dst_dir):
+                        os.makedirs(dst_dir, exist_ok=True)
+
                     if os.path.isfile(path):
-                        shutil.copy(
-                            path,
-                            to_copy_path,
-                        )
+                        shutil.copy(path, to_copy_path)
                     else:
                         shutil.copytree(path, to_copy_path)
+
         except Exception as e:
             logger.error(f"리소스팩 생성 중 오류 발생: {e}")
-            raise e
 
     # ZIP 파일로 압축 - 파일 구조 유지하면서 직접 생성
     zip_path = os.path.join(output_dir, f"{pack_name}.zip")
