@@ -34,7 +34,7 @@ class TranslationContext:
     def initialize_dictionaries(self) -> None:
         """공유 사전을 초기화합니다."""
         global _GLOBAL_DICTIONARY, _GLOBAL_DICTIONARY_LOWERCASE
-
+        _GLOBAL_LOCK = asyncio.Lock()
         # 전역 사전이 비어있고 커스텀 사전이 있으면 초기화
         if not _GLOBAL_DICTIONARY and self.custom_dictionary_dict:
             _GLOBAL_DICTIONARY = self.custom_dictionary_dict.copy()
