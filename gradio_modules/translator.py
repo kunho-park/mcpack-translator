@@ -187,12 +187,13 @@ async def run_json_translation(
 
         with open(temp_json_out, "r", encoding="utf-8") as f:
             data = json.load(f)
-        content = parser.save(data)
-        # 최종 파일 저장
-        with open(out_path, "w", encoding="utf-8") as of:
-            of.write(content)
+        if len(data) > 0:
+            content = parser.save(data)
+            # 최종 파일 저장
+            with open(out_path, "w", encoding="utf-8") as of:
+                of.write(content)
 
-        results.append(out_path)
+            results.append(out_path)
         if logger_client:
             logger_client.write(f"번역 완료: {out_path}")
 
