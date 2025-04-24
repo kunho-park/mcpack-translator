@@ -139,7 +139,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
             """
             if isinstance(value, str):
                 if value == "":
-                    return value
+                    return value, False
                 state = await translation_graph.ainvoke(
                     {
                         "text": value,

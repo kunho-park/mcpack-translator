@@ -3,7 +3,7 @@ import io
 import json
 import os
 import tempfile
-import uuid
+import time
 import zipfile
 
 import gradio as gr
@@ -118,10 +118,16 @@ def create_modpack_translator_ui(config_state):
                 pr = gr.Progress(track_tqdm=True)
 
                 log_output = gr.Textbox(
-                    label="상세 로그",
-                    lines=50,
+                    label="진행 상황 로그",
+                    lines=15,
                     interactive=False,
                     placeholder="번역 로그가 여기에 표시됩니다...",
+                )
+                detail_log_output = gr.Textbox(
+                    label="상세 로그",
+                    lines=40,
+                    interactive=False,
+                    placeholder="상세 번역 로그가 여기에 표시됩니다...",
                 )
                 download = gr.DownloadButton(label="번역 결과 다운로드", visible=False)
 
@@ -159,7 +165,9 @@ def create_modpack_translator_ui(config_state):
             add_log(f"모델 설정: {provider}, {model_name}, 온도={temperature}")
             # ZIP 압축 해제 (Gradio File 객체 지원)
             os.makedirs("./temp/progress", exist_ok=True)
-            temp_dir = "./temp/progress/{}".format(uuid.uuid4())
+            # UUID 대신 짧은 임의 문자열 사용
+            short_id = str(int(time.time() * 1000))[-8:]  # 마지막 8자리 사용
+            temp_dir = f"./temp/progress/{short_id}"
             input_dir = os.path.join(temp_dir, "input").replace("\\", "/")
             output_dir = os.path.join(temp_dir, "output").replace("\\", "/")
             os.makedirs(input_dir, exist_ok=True)
@@ -437,5 +445,10 @@ def create_modpack_translator_ui(config_state):
                 logger_client = Logger(log_file_path)
                 return gr.update(value=logger_client.read_logs())
 
+        def detail_update_log(config):
+            logger_client = Logger("./translation.log")
+            return gr.update(value=logger_client.read_logs())
+
         gr.Timer(3).tick(fn=update_log, inputs=[config_state], outputs=log_output)
+        gr.Timer(3).tick(fn=detail_update_log, outputs=detail_log_output)
     return tab

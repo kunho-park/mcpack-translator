@@ -58,7 +58,7 @@ class PaxiDatapackLoader(BaseLoader):
 
         if not translation_graph:
             self.logger.error("번역 그래프가 제공되지 않았습니다.")
-            return value
+            return value, True
         state = await translation_graph.ainvoke(
             {
                 "text": value,
