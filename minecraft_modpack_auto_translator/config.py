@@ -20,7 +20,8 @@ C_PLACEHOLDER_PATTERN = r"%(?:[sd]|1\$s)"
 ITEM_PLACEHOLDER_PATTERN = r"\$\([^)]*\)"
 JSON_PLACEHOLDER_PATTERN = r"\{(?:[^{}]|(?R))*\}"
 HTML_TAG_PATTERN = r"<[^>]*>"
-MINECRAFT_ITEM_CODE_PATTERN = r"[a-zA-Z_0-9]+[:.][0-9a-zA-Z_./]*[a-zA-Z]"
+# 연속된 점(.)이나 슬래시(/)를 허용하지 않고, 경로가 영숫자나 밑줄(_)로 시작하고 끝나도록 수정된 패턴
+MINECRAFT_ITEM_CODE_PATTERN = r"[a-zA-Z_0-9]+[:.]([0-9a-zA-Z_]+([./][0-9a-zA-Z_]+)*)"
 # 대괄호 태그 패턴 (그룹1: 여는 태그, 그룹2: 내용, 그룹3: 닫는 태그 감지)
 SQUARE_BRACKET_TAG_PATTERN = r"(\[[a-z0-9_]+\])(.*?)?(\[\/[a-z0-9_]+\])"
 
@@ -141,15 +142,15 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
 5. Prohibit mixed‐language output.  
    - Do not mix English and Korean.  
    - Always produce fully Korean text unless the term must remain in English.  
-     - Incorrect: “Enter your name” → “이름을 enter하세요”  
-     - Correct: “Enter your name” → “이름을 입력하세요”
+     - Incorrect: "Enter your name" → "이름을 enter하세요"  
+     - Correct: "Enter your name" → "이름을 입력하세요"
 
 6. Ban any other language.  
    - Output only in Korean (or English if specified).  
    - Do not use Chinese, Japanese, French, or any other language.
 
 7. Respect original capitalization.  
-   - When retaining English terms, match the source’s uppercase/lowercase exactly.  
+   - When retaining English terms, match the source's uppercase/lowercase exactly.  
    - Preserve capitalization for acronyms, proper nouns, and sentence starts.
 </translation_rules>
 
@@ -158,13 +159,13 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
 1. Never alter, translate, or remove any `[P<number>]` placeholder.  
 2. Place each placeholder in the same position as in the source text.  
 3. Example (correct):  
-   “This is [P1]test[P2]” → “이것은 [P1]테스트[P2]입니다.”  
+   "This is [P1]test[P2]" → "이것은 [P1]테스트[P2]입니다."  
 4. Example (incorrect – position changed):  
-   “This is [P1]test[P2]” → “[P1]이것은 테스트[P2]입니다.”  
+   "This is [P1]test[P2]" → "[P1]이것은 테스트[P2]입니다."  
 5. Example (incorrect – position changed):  
-   “This is [P1]test[P2]” → “이것은 테스트[P1]입니다.[P2]”  
+   "This is [P1]test[P2]" → "이것은 테스트[P1]입니다.[P2]"  
 6. Example (incorrect – merged placeholders):  
-   “This is [P1]test[P2]” → “이것은 테스트[P1][P2]입니다.”
+   "This is [P1]test[P2]" → "이것은 테스트[P1][P2]입니다."
 
 Omitting or misplacing placeholders will break the game. You MUST keep every placeholder exactly in its original location.
 </placeholders_rules>"""
@@ -185,15 +186,15 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
 4. Prohibit mixed‐language output.  
    - Do not mix English and Korean.  
    - Always produce fully Korean text unless the term must remain in English.  
-     - Incorrect: “Enter your name” → “이름을 enter하세요”  
-     - Correct: “Enter your name” → “이름을 입력하세요”
+     - Incorrect: "Enter your name" → "이름을 enter하세요"  
+     - Correct: "Enter your name" → "이름을 입력하세요"
 
 5. Ban any other language.  
    - Output only in Korean (or English if specified).  
    - Do not use Chinese, Japanese, French, or any other language.
 
 6. Respect original capitalization.  
-   - When retaining English terms, match the source’s uppercase/lowercase exactly.  
+   - When retaining English terms, match the source's uppercase/lowercase exactly.  
    - Preserve capitalization for acronyms, proper nouns, and sentence starts.
 </translation_rules>"""
 
