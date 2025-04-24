@@ -449,7 +449,7 @@ def create_modpack_translator_ui(config_state):
                 logger_client = Logger(log_file_path)
                 return gr.update(value=logger_client.read_logs())
 
-        def detail_update_log(config):
+        def detail_update_log():
             logger_client = Logger("./translation.log")
             return gr.update(value=logger_client.read_logs())
 
