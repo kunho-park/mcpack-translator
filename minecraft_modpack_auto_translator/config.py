@@ -102,6 +102,7 @@ Also, you must translate to **Korean**.
 ###Instruction###
 Do not blindly trust these entries. Preserve formatting and capitalization.
 
+###Words###
 {dictionary}
 </dictionary>
 
