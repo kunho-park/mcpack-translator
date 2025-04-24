@@ -291,13 +291,17 @@ def create_modpack_translator_ui(config_state):
             if share_results:
                 try:
                     fingerprint_path = os.path.join(temp_dir, "fingerprint.json")
+                    error_path = "./temp/error_list.json"
                     with open(fingerprint_path, "w", encoding="utf-8") as f:
                         json.dump(jar_fingerprints, f, ensure_ascii=False, indent=4)
                     share_zip_path = os.path.join(temp_dir, "shared_result.zip")
                     with zipfile.ZipFile(
                         share_zip_path, "w", zipfile.ZIP_DEFLATED
                     ) as share_zf:
-                        share_zf.write(fingerprint_path, arcname="fingerprint.json")
+                        if os.path.exists(fingerprint_path):
+                            share_zf.write(fingerprint_path, arcname="fingerprint.json")
+                        if os.path.exists(error_path):
+                            share_zf.write(error_path, arcname="error_list.json")
                         for jar_name in jar_fingerprints.keys():
                             extract_path = os.path.join(
                                 output_dir, "mods", "extracted", jar_name
