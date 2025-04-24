@@ -131,25 +131,21 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
 2. Convey meaning naturally.  
    - Translate faithfully while producing smooth, idiomatic Korean.
 
-3. Transcribe proper names and technical terms.  
-   - Render brand names, game terms, and technical jargon in Hangul phonetics.  
-     - Example: Thermal Expansion → 써멀 익스팬션
-
-4. Use the glossary contextually.  
+3. Use the glossary contextually.  
    - Refer to the provided glossary and adapt entries as needed.  
    - For terms not in the glossary, translate into natural Korean.
 
-5. Prohibit mixed‐language output.  
+4. Prohibit mixed‐language output.  
    - Do not mix English and Korean.  
    - Always produce fully Korean text unless the term must remain in English.  
      - Incorrect: "Enter your name" → "이름을 enter하세요"  
      - Correct: "Enter your name" → "이름을 입력하세요"
 
-6. Ban any other language.  
+5. Ban any other language.  
    - Output only in Korean (or English if specified).  
    - Do not use Chinese, Japanese, French, or any other language.
 
-7. Respect original capitalization.  
+6. Respect original capitalization.  
    - When retaining English terms, match the source's uppercase/lowercase exactly.  
    - Preserve capitalization for acronyms, proper nouns, and sentence starts.
 </translation_rules>
@@ -175,25 +171,21 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
 1. Convey meaning naturally.  
    - Translate faithfully while producing smooth, idiomatic Korean.
 
-2. Transcribe proper names and technical terms.  
-   - Render brand names, game terms, and technical jargon in Hangul phonetics.  
-     - Example: Thermal Expansion → 써멀 익스팬션
-
-3. Use the glossary contextually.  
+2. Use the glossary contextually.  
    - Refer to the provided glossary and adapt entries as needed.  
    - For terms not in the glossary, translate into natural Korean.
 
-4. Prohibit mixed‐language output.  
+3. Prohibit mixed‐language output.  
    - Do not mix English and Korean.  
    - Always produce fully Korean text unless the term must remain in English.  
      - Incorrect: "Enter your name" → "이름을 enter하세요"  
      - Correct: "Enter your name" → "이름을 입력하세요"
 
-5. Ban any other language.  
+4. Ban any other language.  
    - Output only in Korean (or English if specified).  
    - Do not use Chinese, Japanese, French, or any other language.
 
-6. Respect original capitalization.  
+5. Respect original capitalization.  
    - When retaining English terms, match the source's uppercase/lowercase exactly.  
    - Preserve capitalization for acronyms, proper nouns, and sentence starts.
 </translation_rules>"""
@@ -204,9 +196,7 @@ DICTIONARY_INSTRUCTIONS = """###Instruction###
 3. Do not mix English and Korean.  
    - Correct: `{"en": "Crafting Table", "ko": "크래프팅 테이블"}`  
    - Incorrect: `{"en": "Crafting Table", "ko": "크래프팅 Table"}`  
-4. Prioritize Hangul phonetic transcription for proper nouns and technical terms.  
-   - Example: `"Thermal Expansion"` → `"써멀 익스팬션"`  
-5. Register entries at the word or short phrase level only; avoid sentence-length entries.
+4. Register entries at the word or short phrase level only; avoid sentence-length entries.
 
 ###Example###
 O `{"en": "Iridium", "ko": "이리듐"}`  
