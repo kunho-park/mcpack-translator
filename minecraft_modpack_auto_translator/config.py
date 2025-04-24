@@ -97,6 +97,9 @@ TEMPLATE_TRANSLATE_TEXT = """\
 </dictionary_instructions>{placeholders}
 
 <dictionary>
+이곳에 있는 단어들은 맹신하지 마세요.
+형식에 맞게 대소문자를 지켜서 사용하세요.
+
 {dictionary}
 </dictionary>
 
@@ -148,6 +151,10 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
    - 영어를 한국어로 번역할 때는 완전한 한국어 문장을 사용해야 합니다.
      - 올바른 예시: "Open Inventory" → "인벤토리 열기" (O)
      - 잘못된 예시: "Open Inventory" → "Open 인벤토리" (X, 혼합 사용 금지)
+     
+7. **대소문자 규칙 준수**
+   - 영어 그대로 사용시, 원문의 대소문자 규칙을 반드시 준수해야 합니다.
+   - 고유명사, 약어, 문장 시작 등 원문에서 대문자로 표기된 부분은 번역에서도 동일하게 적용하세요.
 </translation_rules>
 
 <placeholders_rules>
@@ -190,6 +197,10 @@ RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
    - 영어를 한국어로 번역할 때는 완전한 한국어 문장을 사용해야 합니다.
      - 올바른 예시: "Open Inventory" → "인벤토리 열기" (O)
      - 잘못된 예시: "Open Inventory" → "Open 인벤토리" (X, 혼합 사용 금지)
+
+6. **대소문자 규칙 준수**
+   - 영어 그대로 사용시, 원문의 대소문자 규칙을 반드시 준수해야 합니다.
+   - 고유명사, 약어, 문장 시작 등 원문에서 대문자로 표기된 부분은 번역에서도 동일하게 적용하세요.
 </translation_rules>"""
 
 DICTIONARY_INSTRUCTIONS = """1. 사전에 추가할 중요 용어 발견 시 `new_dictionary_entries` 목록에 등록해주세요.

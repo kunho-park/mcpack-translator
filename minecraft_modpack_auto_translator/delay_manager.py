@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import threading  # Import threading for the init lock
 import time
 from typing import Optional
 
@@ -13,13 +14,7 @@ class DelayManager:
     여러 워커에서 공유하여 사용할 수 있도록 설계됨
     """
 
-    _instance = None  # 싱글톤 인스턴스
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(DelayManager, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
+    _init_lock = threading.Lock()  # Lock for initializing the asyncio lock
 
     def __init__(self, delay: float = 0.5):
         """
@@ -28,14 +23,10 @@ class DelayManager:
         Args:
             delay: 요청 사이의 지연 시간 (초 단위)
         """
-        # 이미 초기화된 경우 중복 초기화 방지
-        if self._initialized:
-            return
 
         self.delay = delay  # 기본 딜레이 (초)
         self.last_request_time = 0.0  # 마지막 요청 시간
-        self.lock = asyncio.Lock()  # 동시 접근 방지를 위한 락
-        self._initialized = True
+        self.lock: Optional[asyncio.Lock] = None  # asyncio.Lock을 None으로 초기화
         logger.info(f"딜레이 관리자 초기화: {delay}초")
 
     def set_delay(self, delay: float) -> None:
@@ -59,11 +50,26 @@ class DelayManager:
         """
         return self.delay
 
+    async def _get_or_create_lock(self) -> asyncio.Lock:
+        """asyncio.Lock이 없으면 지연 생성합니다."""
+        if self.lock is None:
+            # threading.Lock을 사용하여 asyncio.Lock 생성을 보호
+            with DelayManager._init_lock:
+                # Double-check locking 패턴
+                if self.lock is None:
+                    logger.debug("DelayManager를 위한 asyncio.Lock 초기화 중.")
+                    # 특정 루프를 지정하지 않고 락 생성
+                    self.lock = asyncio.Lock()
+        # None이 아님을 명시 (타입 힌트 만족)
+        assert self.lock is not None
+        return self.lock
+
     async def wait_before_request(self) -> None:
         """
         요청 전 필요한 딜레이만큼 대기
         """
-        async with self.lock:
+        lock = await self._get_or_create_lock()  # 락 가져오기 또는 생성
+        async with lock:
             current_time = time.time()
             elapsed = current_time - self.last_request_time
 
@@ -73,7 +79,7 @@ class DelayManager:
                 logger.debug(f"API 요청 전 {wait_time:.2f}초 대기 중")
                 await asyncio.sleep(wait_time)
 
-            # 마지막 요청 시간 업데이트
+            # 마지막 요청 시간 업데이트 (락 내부에서)
             self.last_request_time = time.time()
 
     async def wait_after_request(
@@ -85,15 +91,14 @@ class DelayManager:
         Args:
             additional_delay: 기본 딜레이에 추가할 딜레이 시간 (초 단위)
         """
-        if additional_delay is None:
-            additional_delay = 0
+        lock = await self._get_or_create_lock()  # 락 가져오기 또는 생성
 
-        total_delay = self.delay + additional_delay
+        total_delay = self.delay + (additional_delay or 0)
 
         if total_delay > 0:
             logger.debug(f"API 요청 후 {total_delay:.2f}초 대기 중")
             await asyncio.sleep(total_delay)
 
-        # 마지막 요청 시간 업데이트
-        async with self.lock:
+        # 마지막 요청 시간 업데이트 (락 내부에서)
+        async with lock:
             self.last_request_time = time.time()
