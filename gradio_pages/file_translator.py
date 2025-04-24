@@ -26,17 +26,15 @@ def create_file_translator_ui(config_state):
             source_lang = gr.Textbox(label="원본 언어 코드", value="en_us")
             file_split_number = gr.Number(label="파일 분할 작업자 수", value=1)
             use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=False)
-            force_keep_line_break = gr.Checkbox(label="줄바꿈 강제 유지", value=False)
+            force_keep_line_break = gr.Checkbox(
+                label="줄바꿈 강제 유지", value=False
+            )
 
         # UI 요소
         translate_btn = gr.Button("번역 시작")
         progress_label = gr.Label(value="준비 중...")
         progress_bar = gr.Progress(track_tqdm=True)
-        log_output = gr.Textbox(
-            label="상세 로그 (이전 로그도 같이 표시될 수 있음)",
-            lines=10,
-            interactive=False,
-        )
+        log_output = gr.Textbox(label="상세 로그", lines=10, interactive=False)
         download_button = gr.DownloadButton(
             label="💾 번역 결과 다운로드", visible=False
         )

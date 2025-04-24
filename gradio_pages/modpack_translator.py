@@ -124,7 +124,7 @@ def create_modpack_translator_ui(config_state):
                     placeholder="번역 로그가 여기에 표시됩니다...",
                 )
                 detail_log_output = gr.Textbox(
-                    label="상세 로그",
+                    label="상세 로그 (이전 로그도 같이 표시될 수 있음)",
                     lines=40,
                     interactive=False,
                     placeholder="상세 번역 로그가 여기에 표시됩니다...",
