@@ -139,7 +139,7 @@ async def analyze_text(state):
     if context:
         context.initialize_dictionaries()
 
-    if context.force_keep_line_break:
+    if context.force_keep_line_break and "\n" in replaced_text:
         newline_placeholder = "[P_NEWLINE]"
         replaced_text = re.sub(r"\n", newline_placeholder, replaced_text)
         placeholder_map[newline_placeholder] = "\n"
