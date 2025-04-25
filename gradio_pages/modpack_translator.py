@@ -9,6 +9,7 @@ import gradio as gr
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import minecraft_modpack_auto_translator
 from gradio_modules.dictionary_builder import (
     process_modpack_directory,
     restore_zip_files,
@@ -16,7 +17,6 @@ from gradio_modules.dictionary_builder import (
 from gradio_modules.logger import Logger
 from gradio_modules.translator import run_json_translation
 from minecraft_modpack_auto_translator.resourcepack import create_resourcepack
-import minecraft_modpack_auto_translator
 
 # 스케줄러 초기화 및 시작
 scheduler = BackgroundScheduler()
@@ -300,10 +300,13 @@ def create_modpack_translator_ui(config_state):
                             for root, _, files in os.walk(folder):
                                 for file in files:
                                     file_path = os.path.join(root, file)
-                                    arcname = os.path.join(
-                                        os.path.basename(folder),
-                                        os.path.relpath(file_path, folder),
-                                    )
+                                    if not file.endswith(".tmp") and not file.endswith(
+                                        ".converted"
+                                    ):
+                                        arcname = os.path.join(
+                                            os.path.basename(folder),
+                                            os.path.relpath(file_path, folder),
+                                        )
                                     zf.write(file_path, arcname=arcname)
                     zf.writestr(
                         "한글패치 적용 가이드.md",
