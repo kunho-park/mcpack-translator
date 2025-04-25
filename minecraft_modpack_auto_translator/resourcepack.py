@@ -109,7 +109,11 @@ def create_resourcepack(
 
                             shutil.copy2(src_file, dst_file)
 
-            elif "kubejs" in normalized_folder or "config" in normalized_folder:
+            elif (
+                "kubejs" in normalized_folder
+                or "config" in normalized_folder
+                or "patchouli_books" in normalized_folder
+            ):
                 folder_glob_path = normalize_glob_path(
                     os.path.join(normalized_folder, "**", "*.*")
                 )

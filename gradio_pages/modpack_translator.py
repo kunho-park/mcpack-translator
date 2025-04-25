@@ -253,6 +253,7 @@ def create_modpack_translator_ui(config_state):
                 "mods": {"suffix": "_MOD_TRANSLATION"},
                 "config": {"suffix": "_CONFIG_TRANSLATION"},
                 "kubejs": {"suffix": "_KUBEJS_TRANSLATION"},
+                "patchouli_books": {"suffix": "_PATCHOULI_BOOKS_TRANSLATION"},
             }
             created_packs = asyncio.run(
                 package_categories(
