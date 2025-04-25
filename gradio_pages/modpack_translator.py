@@ -16,6 +16,7 @@ from gradio_modules.dictionary_builder import (
 from gradio_modules.logger import Logger
 from gradio_modules.translator import run_json_translation
 from minecraft_modpack_auto_translator.resourcepack import create_resourcepack
+import minecraft_modpack_auto_translator
 
 # 스케줄러 초기화 및 시작
 scheduler = BackgroundScheduler()
@@ -313,6 +314,7 @@ def create_modpack_translator_ui(config_state):
                             provider=provider,
                             worker_num=max_workers,
                             file_split=file_split_number,
+                            version=minecraft_modpack_auto_translator.__version__,
                         ),
                     )
                     try:

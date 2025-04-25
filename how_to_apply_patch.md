@@ -29,7 +29,7 @@
 - 이 패치는 마인크래프트 1.20+ 버전을 기준으로 제작되었습니다.
 - 커스텀 사전을 사용하려면 `translation_dictionary.json` 파일을 수정하세요.
 
-### 이 모드팩은 mcpack-translator로 번역 되었습니다.
+## 이 모드팩은 mcpack-translator로 번역 되었습니다.
 - 가이드: https://kunho-park.notion.site/1dc8edfca9988073a109f2b746f1aa8d
 - 깃허브: https://github.com/kunho-park/mcpack-translator
 
@@ -39,3 +39,6 @@
 - Temperature: {temperature}
 - Worker Number: {worker_num}
 - File Split: {file_split}
+
+### 사용된 번역기 버전
+- **mcpack-translator**: {version}

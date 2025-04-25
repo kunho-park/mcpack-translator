@@ -5,7 +5,7 @@
 번역된 내용으로 리소스팩을 생성합니다.
 """
 
-__version__ = "0.1.0"
+__version__ = "2.0.1"
 
 from .graph import create_translation_graph, translate_json_file
 from .parsers import (
