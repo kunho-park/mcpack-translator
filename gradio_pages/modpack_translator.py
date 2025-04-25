@@ -307,7 +307,7 @@ def create_modpack_translator_ui(config_state):
                                             os.path.basename(folder),
                                             os.path.relpath(file_path, folder),
                                         )
-                                    zf.write(file_path, arcname=arcname)
+                                        zf.write(file_path, arcname=arcname)
                     zf.writestr(
                         "한글패치 적용 가이드.md",
                         HOW_TO_APPLY_PATCH.format(
