@@ -1,5 +1,4 @@
 import asyncio
-import io
 import json
 import os
 import tempfile
@@ -15,12 +14,14 @@ from gradio_modules.dictionary_builder import (
     restore_zip_files,
 )
 from gradio_modules.logger import Logger
-from gradio_modules.packager import package_categories
 from gradio_modules.translator import run_json_translation
+from minecraft_modpack_auto_translator.resourcepack import create_resourcepack
 
 # 스케줄러 초기화 및 시작
 scheduler = BackgroundScheduler()
 scheduler.start()
+
+HOW_TO_APPLY_PATCH = open("./how_to_apply_patch.md", "r", encoding="utf-8").read()
 
 
 # 임시 파일 삭제 함수
@@ -249,40 +250,36 @@ def create_modpack_translator_ui(config_state):
             add_log("모든 파일 번역 완료")
             # 리소스팩 카테고리별 생성 (Async Queue)
             add_log("리소스팩 생성 중...")
-            categories_info = {
-                "mods": {"suffix": "_MOD_TRANSLATION"},
-                "config": {"suffix": "_CONFIG_TRANSLATION"},
-                "kubejs": {"suffix": "_KUBEJS_TRANSLATION"},
-                "patchouli_books": {"suffix": "_PATCHOULI_BOOKS_TRANSLATION"},
-            }
-            created_packs = asyncio.run(
-                package_categories(
-                    output_dir,
-                    categories_info,
-                    translate_config,
-                    translate_kubejs,
-                    translate_mods,
-                    resourcepack_name,
-                )
+            # categories_info = {
+            #     "mods": {"suffix": "_MOD_TRANSLATION"},
+            #     "config": {"suffix": "_CONFIG_TRANSLATION"},
+            #     "kubejs": {"suffix": "_KUBEJS_TRANSLATION"},
+            #     "patchouli_books": {"suffix": "_PATCHOULI_BOOKS_TRANSLATION"},
+            # }
+            # created_packs = asyncio.run(
+            #     package_categories(
+            #         output_dir,
+            #         categories_info,
+            #         translate_config,
+            #         translate_kubejs,
+            #         translate_mods,
+            #         resourcepack_name,
+            #     )
+            # )
+            # add_log(f"{len(created_packs)}개의 리소스팩 생성 완료")
+            # # 최종 ZIP 생성
+            folders_to_add = [
+                os.path.join(output_dir, "kubejs"),
+                os.path.join(output_dir, "config"),
+                os.path.join(output_dir, "patchouli_books"),
+            ]
+            mods_resource_pack = create_resourcepack(
+                output_dir,
+                [
+                    os.path.join(output_dir, "mods", "extracted"),
+                ],
+                resourcepack_name + "_RESOURCEPACK",
             )
-            add_log(f"{len(created_packs)}개의 리소스팩 생성 완료")
-            # 최종 ZIP 생성
-
-            final_buf = io.BytesIO()
-            with zipfile.ZipFile(final_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-                for pack in created_packs:
-                    zf.write(pack["path"], arcname=os.path.basename(pack["path"]))
-
-                try:
-                    dict_json = json.dumps(dict_init, ensure_ascii=False, indent=4)
-                    zf.writestr("translation_dictionary.json", dict_json)
-                    add_log("번역 사전을 ZIP 파일에 저장 완료")
-                except Exception as e:
-                    add_log(f"번역 사전 저장 중 오류 발생: {e}")
-
-            final_buf.seek(0)
-
-            # 임시 파일로 최종 ZIP 저장 (NamedTemporaryFile 사용)
             os.makedirs("./temp/translated_resourcepacks", exist_ok=True)
             with tempfile.NamedTemporaryFile(
                 delete=False,
@@ -290,7 +287,41 @@ def create_modpack_translator_ui(config_state):
                 mode="wb",
                 dir="./temp/translated_resourcepacks",
             ) as temp_zip_file:
-                temp_zip_file.write(final_buf.getvalue())
+                with zipfile.ZipFile(
+                    temp_zip_file.name, "w", zipfile.ZIP_DEFLATED
+                ) as zf:
+                    zf.write(
+                        mods_resource_pack, arcname=os.path.basename(mods_resource_pack)
+                    )
+                    for folder in folders_to_add:
+                        folder = folder.replace("\\", "/")
+                        if os.path.exists(folder) and any(os.scandir(folder)):
+                            for root, _, files in os.walk(folder):
+                                for file in files:
+                                    file_path = os.path.join(root, file)
+                                    arcname = os.path.join(
+                                        os.path.basename(folder),
+                                        os.path.relpath(file_path, folder),
+                                    )
+                                    zf.write(file_path, arcname=arcname)
+                    zf.writestr(
+                        "한글패치 적용 가이드.md",
+                        HOW_TO_APPLY_PATCH.format(
+                            resourcepack_name=resourcepack_name,
+                            temperature=temperature,
+                            model=model_name,
+                            provider=provider,
+                            worker_num=max_workers,
+                            file_split=file_split_number,
+                        ),
+                    )
+                    try:
+                        dict_json = json.dumps(dict_init, ensure_ascii=False, indent=4)
+                        zf.writestr("translation_dictionary.json", dict_json)
+                        add_log("번역 사전을 ZIP 파일에 저장 완료")
+                    except Exception as e:
+                        add_log(f"번역 사전 저장 중 오류 발생: {e}")
+
                 final_zip_path = temp_zip_file.name  # 파일 경로 저장
 
             add_log(f"최종 ZIP 생성 완료: {final_zip_path}")
