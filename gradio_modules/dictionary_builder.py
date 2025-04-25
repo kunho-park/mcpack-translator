@@ -368,7 +368,7 @@ def extact_all_zip_files(modpack_path):
     )
     for zip_file in zip_files:
         with zipfile.ZipFile(zip_file, "r") as zf:
-            if "datapacks" in zip_file or "resourcepacks" in zip_file:
+            if "paxi" in zip_file or "openloader" in zip_file:
                 zip_file_edited = zip_file.replace("\\", "/") + ".zip_extracted"
                 if os.path.exists(zip_file_edited):
                     logger.info(f"이미 추출된 파일: {zip_file}")

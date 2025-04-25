@@ -300,8 +300,10 @@ def create_modpack_translator_ui(config_state):
                             for root, _, files in os.walk(folder):
                                 for file in files:
                                     file_path = os.path.join(root, file)
-                                    if not file.endswith(".tmp") and not file.endswith(
-                                        ".converted"
+                                    if (
+                                        not file.endswith(".tmp")
+                                        and not file.endswith(".converted")
+                                        and ".zip_extracted" not in file_path
                                     ):
                                         arcname = os.path.join(
                                             os.path.basename(folder),
