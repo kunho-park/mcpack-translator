@@ -103,6 +103,7 @@ def process_modpack_directory(
     translate_config=True,
     translate_kubejs=True,
     translate_mods=True,
+    translate_patchouli_books=True,
 ):
     """모드팩 디렉토리에서 번역 대상 파일을 찾습니다."""
     from gradio_modules.utils import get_supported_extensions
@@ -147,6 +148,24 @@ def process_modpack_directory(
                 files.append(f)
 
     logger.info(f"찾은 파일: {len(files)}개 (kubejs 처리)")
+    # patchouli
+    if translate_patchouli_books:
+        patchouli_pattern = normalize_glob_path(
+            os.path.join(modpack_path, "patchouli_books/**/*.*")
+        )
+        for f in glob(patchouli_pattern, recursive=True):
+            f = f.replace("\\", "/")
+            ext = os.path.splitext(f)[1]
+            if ext in supported_exts and any(d in f for d in DIR_FILTER_WHITELIST):
+                if "lang/" in f:
+                    if ext in supported_exts and src_lower in f.lower():
+                        files.append(f)
+                else:
+                    files.append(f)
+            elif ext in supported_exts and src_lower in f.lower():
+                files.append(f)
+
+    logger.info(f"찾은 파일: {len(files)}개 (patchouli 책 처리)")
     # mods
     jar_files = []
     fingerprints = {}

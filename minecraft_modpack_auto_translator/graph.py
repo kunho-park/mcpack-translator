@@ -93,7 +93,7 @@ def extract_special_formats(text):
 
     # 마인크래프트 아이템 코드 패턴 (예: minecraft:grass)
     minecraft_item_codes = [
-        i for i in re.findall(MINECRAFT_ITEM_CODE_PATTERN, text) if i != ""
+        i[0] for i in re.findall(MINECRAFT_ITEM_CODE_PATTERN, text) if i != ""
     ]
 
     # 모든 특수 형식을 [PLACEHOLDER_N] 형태로 대체
@@ -109,12 +109,14 @@ def extract_special_formats(text):
         + c_placeholders
         + minecraft_item_codes
     ):
-        if placeholder in replaced_text:
-            placeholder_count += 1
-            token = f"[P{placeholder_count}]"
-            replaced_text = replaced_text.replace(placeholder, token, 1)
-            placeholder_map[token] = placeholder
-
+        try:
+            if placeholder in replaced_text:
+                placeholder_count += 1
+                token = f"[P{placeholder_count}]"
+                replaced_text = replaced_text.replace(placeholder, token, 1)
+                placeholder_map[token] = placeholder
+        except:
+            logger.error(f"특수 형식 추출 중 오류 발생: {placeholder}")
     return replaced_text, placeholder_map
 
 

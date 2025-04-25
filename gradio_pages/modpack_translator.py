@@ -87,6 +87,7 @@ def create_modpack_translator_ui(config_state):
                         value="Auto-Translated-KO",
                     )
                     with gr.Row():
+                        gr.Markdown("")
                         translate_config = gr.Checkbox(
                             label="Config 파일 번역", value=True
                         )
@@ -94,6 +95,10 @@ def create_modpack_translator_ui(config_state):
                             label="KubeJS 파일 번역", value=True
                         )
                         translate_mods = gr.Checkbox(label="Mods 파일 번역", value=True)
+                        translate_patchouli_books = gr.Checkbox(
+                            label="Patchouli 책 번역 (모드 안에 있는건 이미 자동 번역됨)",
+                            value=True,
+                        )
                     with gr.Row():
                         max_workers = gr.Number(
                             label="동시 작업자 수", value=5, maximum=10
@@ -142,6 +147,7 @@ def create_modpack_translator_ui(config_state):
             translate_config,
             translate_kubejs,
             translate_mods,
+            translate_patchouli_books,
             max_workers,
             file_split_number,
             use_random_order,
@@ -195,6 +201,7 @@ def create_modpack_translator_ui(config_state):
                 translate_config,
                 translate_kubejs,
                 translate_mods,
+                translate_patchouli_books,
             )
             add_log(f"{len(files)}개의 언어 파일 발견")
             # 번역 대상 파일 쌍 생성
@@ -433,6 +440,7 @@ def create_modpack_translator_ui(config_state):
                 translate_config,
                 translate_kubejs,
                 translate_mods,
+                translate_patchouli_books,
                 max_workers,
                 file_split_number,
                 use_random_order,
