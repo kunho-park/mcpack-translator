@@ -103,7 +103,7 @@ Also, you must translate to **Korean**.
 ###Instruction###
 Do not blindly trust these entries. Preserve formatting and capitalization.
 
-###Words###
+###Dictionary###
 {dictionary}
 </dictionary>
 
@@ -129,6 +129,7 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
    - Do not modify, translate, or delete any `[P<number>]` tokens.  
    - Do not introduce new `[P<number>]` tokens.  
    - If a placeholder appears at the start or end of a word or sentence, keep it in the exact original position.
+   - Placeholders must remain in the same word as the original text.
 
 2. Convey meaning naturally.  
    - Translate faithfully while producing smooth, idiomatic Korean.
