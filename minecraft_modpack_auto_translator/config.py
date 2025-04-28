@@ -33,6 +33,7 @@ DIR_FILTER_WHITELIST = [
     "/paxi/datapacks/",
     "/paxi/resourcepacks/",
     "/puffish_skills/categories/",
+    "/openloader",
 ]
 
 # 기본 영어 단어 블랙리스트

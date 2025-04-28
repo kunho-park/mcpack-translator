@@ -119,6 +119,7 @@ def get_translator(
     api_base: Optional[str] = None,
     temperature: float = 0.1,
     rate_limiter: Optional[BaseRateLimiter] = None,
+    seed: Optional[int] = 42,
 ) -> BaseChatModel:
     """
     다양한 LLM 제공자를 지원하는 번역기 생성 함수
@@ -145,6 +146,7 @@ def get_translator(
             openai_api_base=api_base,
             temperature=temperature,
             rate_limiter=rate_limiter,
+            seed=seed,
         )
     elif provider == "google":
         return ChatGoogleGenerativeAI(
@@ -162,6 +164,7 @@ def get_translator(
             openai_api_base=api_base,
             temperature=temperature,
             rate_limiter=rate_limiter,
+            seed=seed,
         )
     elif provider == "ollama":
         if api_base is None:
