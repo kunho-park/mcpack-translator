@@ -103,7 +103,7 @@ def create_modpack_translator_ui(config_state):
                         )
                     with gr.Row():
                         max_workers = gr.Number(
-                            label="동시 작업자 수", value=5, maximum=10
+                            label="동시 작업자 수", value=5, maximum=30
                         )
                         file_split_number = gr.Number(
                             label="파일 분할 작업자 수", value=1, maximum=5
