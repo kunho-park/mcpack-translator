@@ -120,6 +120,7 @@ def get_translator(
     temperature: float = 0.1,
     rate_limiter: Optional[BaseRateLimiter] = None,
     seed: Optional[int] = 42,
+    thinking_budget: Optional[int] = None,
 ) -> BaseChatModel:
     """
     다양한 LLM 제공자를 지원하는 번역기 생성 함수
@@ -154,6 +155,7 @@ def get_translator(
             google_api_key=api_key,
             temperature=temperature,
             rate_limiter=rate_limiter,
+            thinking_budget=thinking_budget,
         )
     elif provider == "grok":
         if api_base is None:

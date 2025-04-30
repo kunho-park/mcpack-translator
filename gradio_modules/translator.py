@@ -45,6 +45,8 @@ async def run_json_translation(
     api_base = config["api_base"]
     model_name = config["model_name"]
     temperature = config["temperature"]
+    use_thinking_budget = config.get("use_thinking_budget", False)
+    thinking_budget = config.get("thinking_budget", None)
 
     # --- 속도 제한 및 지연 설정 로드 --- #
     use_rate_limiter = config.get("use_rate_limiter", False)
@@ -107,6 +109,7 @@ async def run_json_translation(
             temperature,
             # --- RateLimiter 및 DelayManager 전달 --- #
             rate_limiter=rate_limiter,
+            thinking_budget=thinking_budget if use_thinking_budget else None,
             # --- 전달 끝 --- #
         )
 

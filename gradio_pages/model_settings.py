@@ -43,6 +43,18 @@ def create_model_settings_ui(config_state):
             label="온도 (Temperature)", minimum=0.0, maximum=2.0, step=0.01, value=0
         )
         with gr.Row():
+            gr.Markdown("## Gemini 2.5 Flash 전용 옵션")
+            use_thinking_budget = gr.Checkbox(
+                label="생각 비용 사용 (Thinking Budget)", value=False
+            )
+            thinking_budget = gr.Slider(
+                label="생각 비용 (Thinking Budget)",
+                minimum=0,
+                maximum=1024,
+                step=1,
+                value=0,
+            )
+        with gr.Row():
             use_rate_limiter = gr.Checkbox(label="속도 제한 사용 (RPM)", value=False)
             rpm = gr.Number(
                 label="분당 최대 요청 수 (RPM)",
@@ -69,6 +81,8 @@ def create_model_settings_ui(config_state):
             api_base,
             model_name,
             temperature,
+            use_thinking_budget,
+            thinking_budget,
             use_rate_limiter,
             rpm,
             use_request_delay,
@@ -83,6 +97,8 @@ def create_model_settings_ui(config_state):
                     "api_base": api_base,
                     "model_name": model_name,
                     "temperature": temperature,
+                    "use_thinking_budget": use_thinking_budget,
+                    "thinking_budget": thinking_budget,
                     "use_rate_limiter": use_rate_limiter,
                     "rpm": int(rpm),
                     "use_request_delay": use_request_delay,
@@ -101,6 +117,8 @@ def create_model_settings_ui(config_state):
                 api_base,
                 model_name,
                 temperature,
+                use_thinking_budget,
+                thinking_budget,
                 use_rate_limiter,
                 rpm,
                 use_request_delay,
@@ -159,6 +177,8 @@ def create_model_settings_ui(config_state):
                     gr.update(),
                     gr.update(),
                     gr.update(),
+                    gr.update(),
+                    gr.update(),
                 )
             # Multi API 키 지원: api_keys 또는 기존 api_key 필드를 적절히 변환
             api_keys_str = ""
@@ -180,6 +200,8 @@ def create_model_settings_ui(config_state):
                 data.get("api_base"),
                 data.get("model_name"),
                 data.get("temperature"),
+                data.get("use_thinking_budget", False),
+                data.get("thinking_budget", 0),
                 data.get("use_rate_limiter", False),
                 data.get("rpm", 60),
                 data.get("use_request_delay", False),
@@ -196,6 +218,8 @@ def create_model_settings_ui(config_state):
                 api_base,
                 model_name,
                 temperature,
+                use_thinking_budget,
+                thinking_budget,
                 use_rate_limiter,
                 rpm,
                 use_request_delay,

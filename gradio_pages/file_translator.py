@@ -59,6 +59,8 @@ def create_file_translator_ui(config_state):
             provider = config.get("provider")
             model_name = config.get("model_name")
             temperature = config.get("temperature")
+            thinking_budget = config.get("thinking_budget", None)
+            use_thinking_budget = config.get("use_thinking_budget", False)
             add_log(f"모델 설정: {provider}, {model_name}, 온도={temperature}")
 
             # --- 속도 제한 및 지연 설정 로드 --- #
@@ -164,6 +166,9 @@ def create_file_translator_ui(config_state):
                             # --- RateLimiter 및 DelayManager 전달 --- #
                             rate_limiter=rate_limiter,
                             # --- 전달 끝 --- #
+                            thinking_budget=thinking_budget
+                            if use_thinking_budget
+                            else None,
                         ),
                         max_workers=int(file_split_number),
                         use_random_order=use_random_order,

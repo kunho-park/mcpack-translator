@@ -21,7 +21,7 @@ dependencies = [
     "langchain-anthropic>=0.3.10",
     "langchain-community>=0.3.20",
     "langchain-core>=0.3.49",
-    "langchain-google-genai>=2.1.2",
+    "langchain-google-genai>=2.1.4",
     "langchain-ollama>=0.3.0",
     "langchain-openai>=0.3.11",
     "langgraph>=0.3.21",
@@ -32,12 +32,8 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "regex>=2024.11.6",
     "requests>=2.32.3",
-    "st-annotated-text>=4.0.2",
-    "streamlit>=1.44.1",
     "uvicorn>=0.34.1",
 ]
 
 [dependency-groups]
-dev = [
-    "ipykernel>=6.29.5",
-]
+dev = ["ipykernel>=6.29.5"]
