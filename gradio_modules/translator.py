@@ -14,6 +14,7 @@ from minecraft_modpack_auto_translator.parsers.base_parser import BaseParser
 from minecraft_modpack_auto_translator.translator import get_translator
 
 from .dictionary_builder import (
+    DIR_FILTER_WHITELIST,
     build_dictionary_from_files,
     filter_korean_lang_files,
     initialize_translation_dictionary,
@@ -132,7 +133,9 @@ async def run_json_translation(
         out_path = pair["output"]
         ko_data = pair["data"]
 
-        if skip_translated and os.path.exists(out_path):
+        if skip_translated and os.path.exists(out_path) and not any(
+            d in out_path for d in DIR_FILTER_WHITELIST
+        ):
             results.append(out_path)
             if logger_client:
                 await logger_client.awrite(f"이미 번역된 파일 건너뛰기: {out_path}")
