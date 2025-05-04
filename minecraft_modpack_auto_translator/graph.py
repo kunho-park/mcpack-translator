@@ -115,8 +115,9 @@ def extract_special_formats(text):
                 token = f"[P{placeholder_count}]"
                 replaced_text = replaced_text.replace(placeholder, token, 1)
                 placeholder_map[token] = placeholder
-        except:
+        except Exception as e:
             logger.error(f"특수 형식 추출 중 오류 발생: {placeholder}")
+            logger.error(f"오류 발생 원인: {e}")
     return replaced_text, placeholder_map
 
 

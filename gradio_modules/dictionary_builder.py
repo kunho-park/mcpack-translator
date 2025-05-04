@@ -370,14 +370,21 @@ def extact_all_zip_files(modpack_path):
         with zipfile.ZipFile(zip_file, "r") as zf:
             if "paxi" in zip_file or "openloader" in zip_file:
                 zip_file_edited = zip_file.replace("\\", "/") + ".zip_extracted"
+                zip_file_edited_output = zip_file_edited.replace("/input/", "/output/")
+
                 if os.path.exists(zip_file_edited):
                     logger.info(f"이미 추출된 파일: {zip_file}")
                     continue
 
                 os.makedirs(zip_file_edited, exist_ok=True)
-                logger.info(f"'{zip_file}' 파일을 '{zip_file_edited}' 폴더로 추출 준비 중...")
+                os.makedirs(zip_file_edited_output, exist_ok=True)
+
+                logger.info(
+                    f"'{zip_file}' 파일을 '{zip_file_edited}' 폴더로 추출 준비 중..."
+                )
                 try:
                     zf.extractall(zip_file_edited)
+                    zf.extractall(zip_file_edited_output)
                 except Exception:
                     logger.error(f"zip 파일 추출 실패: {zip_file}")
     return zip_files
