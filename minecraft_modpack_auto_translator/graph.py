@@ -400,7 +400,9 @@ async def translate_text(state):
                         "additional_rules": additional_rules,
                         "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
                         "translation_rules": translation_rules,
-                        "translation_key": state["translation_key"],
+                        "translation_key": state["translation_key"]
+                        .replace("[", "")
+                        .replace("]", ""),
                     },
                 )
             except Exception as api_error:

@@ -191,7 +191,7 @@ def process_modpack_directory(
                         ".zip",
                         ".lang",
                         ".md",
-                    ):
+                    ) or any(d in entry for d in DIR_FILTER_WHITELIST):
                         try:
                             zf.extract(entry, out_dir)
                             is_extracted = True
@@ -375,6 +375,7 @@ def extact_all_zip_files(modpack_path):
                     continue
 
                 os.makedirs(zip_file_edited, exist_ok=True)
+                logger.info(f"'{zip_file}' 파일을 '{zip_file_edited}' 폴더로 추출 준비 중...")
                 try:
                     zf.extractall(zip_file_edited)
                 except Exception:
