@@ -18,7 +18,7 @@ class SNBTParser(BaseParser):
     """SNBT 형식 파일 파서"""
 
     @staticmethod
-    def     replace_ampersand(obj):
+    def replace_ampersand(obj):
         """
         객체 내의 & 문자를 이스케이프 처리합니다 (마인크래프트 컬러 코드 제외).
 
