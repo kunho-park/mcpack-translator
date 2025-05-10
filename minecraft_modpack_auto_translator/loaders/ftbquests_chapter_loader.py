@@ -31,6 +31,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
             isinstance(value, list)
             and "/ftbquests/quests/chapters/" in input_path
             and "quests" == key
+            and len(value) > 0
             and isinstance(value[0], dict)
         )
 
