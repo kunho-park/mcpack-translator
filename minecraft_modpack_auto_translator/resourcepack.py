@@ -330,6 +330,3 @@ def create_resourcepack(
 
     logger.info(f"리소스팩 생성 완료: {zip_path}")
     return zip_path
-
-
-print(repack_mods("./temp/progress/65326447/output/mods/extracted"))
