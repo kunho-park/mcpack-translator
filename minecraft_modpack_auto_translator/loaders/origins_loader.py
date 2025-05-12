@@ -26,7 +26,7 @@ class OriginsLoader(BaseLoader):
         """
         맞는 형식인지지 확인합니다.
         """
-        return "/origins/" in input_path
+        return "/origins/" in input_path or "/powers/" in input_path
 
     def process(
         self, input_path: str, key: str, value: Any, context: TranslationContext

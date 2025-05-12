@@ -50,86 +50,106 @@ def repack_mods(mods_folder):
         생성된 .jar 파일 경로 리스트
     """
     created_jars = []
-    output_base = os.path.join(mods_folder, "output")
-    input_base = os.path.join(mods_folder, "input")
 
-    # output 폴더 내의 하위 폴더를 순회합니다.
-    # os.path.join(output_base, '*') 대신 glob을 사용하여 하위 폴더만 대상으로 합니다.
-    # output_base 자체가 존재하지 않을 경우를 대비합니다.
-    if not os.path.isdir(output_base):
-        logger.warning(f"Output base directory not found: {output_base}")
-        return []
+    jars_folder = os.path.join("./temp", "jars")
+    os.makedirs(jars_folder, exist_ok=True)
 
-    for item_path in glob(os.path.join(output_base, "*")):
+    for item_path in glob(os.path.join(mods_folder, "*")):
         if not os.path.isdir(item_path):
             continue  # 폴더만 처리
 
         output_folder = item_path
         # output 폴더 이름으로 input 폴더 경로를 구성합니다.
         folder_name = os.path.basename(output_folder)
-        input_folder = os.path.join(input_base, folder_name)
+
+        # input_folder = output_folder.replace("output", "input") # 이전 방식
+        input_jar_filename = folder_name  # .jar 확장자 추가
+        input_jar_path = (
+            mods_folder.replace("output", "input").replace("mods/extracted", "mods")
+            + "/"
+            + input_jar_filename
+        )
 
         # output 폴더 내에 'data' 디렉토리가 있는지 확인합니다.
         try:
             if "data" in os.listdir(output_folder):
                 logger.info(f"Processing folder: {folder_name}")
 
-                # input 폴더 존재 여부 확인
-                if not os.path.isdir(input_folder):
+                # input JAR 파일 존재 여부 확인
+                input_jar_exists = os.path.isfile(input_jar_path)
+                if not input_jar_exists:
                     logger.warning(
-                        f"Input folder not found for {folder_name}, skipping initial packing."
+                        f"Input JAR file not found at {input_jar_path}, skipping initial packing from JAR."
                     )
-                    # input 폴더가 없으면 output만으로 jar 생성 또는 다른 처리 가능
-                    # 여기서는 일단 건너뛰거나, output만으로 생성할 수 있습니다.
-                    # 요구사항에 따라 output만으로 생성하도록 수정합니다.
-                    input_folder_exists = False
-                else:
-                    input_folder_exists = True
+                # else: # input_folder_exists 불필요, input_jar_exists로 대체
+                #     input_folder_exists = True
 
                 # 임시 zip 파일 생성
                 temp_zip_file = None  # finally 블록에서 사용하기 위해 초기화
+                temp_zip_path_for_finally = None  # finally에서 사용할 임시 zip 경로
                 try:
                     # 임시 파일 생성 (고유 이름 보장)
-                    temp_fd, temp_zip_path = tempfile.mkstemp(suffix=".zip")
+                    temp_fd, temp_zip_path = tempfile.mkstemp(suffix=".temp_zip")
+                    temp_zip_path_for_finally = (
+                        temp_zip_path  # finally에서 참조할 수 있도록 할당
+                    )
                     os.close(temp_fd)  # 핸들 닫기
                     temp_zip_file = zipfile.ZipFile(
-                        temp_zip_path, "w", zipfile.ZIP_DEFLATED
+                        temp_zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6
                     )
                     logger.debug(f"Created temporary zip file: {temp_zip_path}")
+                    # added_arcnames = set() # Output 우선 로직에서 사용, 현재는 불필요
 
-                    # 1. input 폴더 내용 압축 (존재하는 경우)
-                    if input_folder_exists:
-                        logger.info(f"Packing contents from input: {input_folder}")
-                        for root, _, files in os.walk(input_folder):
-                            for file in files:
-                                file_path = os.path.join(root, file)
-                                arcname = os.path.relpath(file_path, input_folder)
-                                temp_zip_file.write(file_path, arcname)
-                                logger.debug(f"Added from input: {arcname}")
-
-                    # 2. output 폴더 내용 압축 (덮어쓰기)
+                    added = []
                     logger.info(
                         f"Packing/overwriting contents from output: {output_folder}"
                     )
                     for root, _, files in os.walk(output_folder):
                         for file in files:
+                            if (
+                                file.endswith(
+                                    ".temp_zip"
+                                )  # 생성 중인 임시 zip 파일 자체는 추가하지 않음
+                                or file.endswith(".tmp")
+                                or ".zip_extracted" in file
+                                or file.endswith(".converted")
+                            ):
+                                continue
                             file_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_path, output_folder)
-                            # 이미 input에서 추가된 파일이 있다면 덮어씁니다.
                             temp_zip_file.write(file_path, arcname)
                             logger.debug(f"Added/overwritten from output: {arcname}")
+                            added.append(arcname)
+
+                    # 1. input JAR 내용 압축 (존재하는 경우)
+                    if input_jar_exists:
+                        logger.info(
+                            f"Packing contents from input JAR: {input_jar_path}"
+                        )
+                        with zipfile.ZipFile(input_jar_path, "r") as src_jar:
+                            for member_info in src_jar.infolist():
+                                # 특정 임시 파일 등 건너뛰기
+                                if member_info.filename in added:
+                                    continue
+                                member_data = src_jar.read(member_info.filename)
+                                temp_zip_file.writestr(member_info, member_data)
+                                logger.debug(
+                                    f"Added from input JAR: {member_info.filename}"
+                                )
 
                     temp_zip_file.close()  # 파일 쓰기 완료 후 닫기
+                    temp_zip_file = None  # 정상 종료 시 None으로 설정하여 finally에서 중복 close 방지
 
                     # 3. 최종 .jar 파일 생성 및 이동
-                    final_jar_name = f"{folder_name}.jar"
-                    final_jar_path = os.path.join(mods_folder, final_jar_name)
+                    final_jar_name = f"{folder_name}{'.jar' if not folder_name.endswith('.jar') else ''}"
+                    final_jar_path = os.path.join(jars_folder, final_jar_name)
 
                     # 기존 파일이 있으면 덮어쓰기 (shutil.move가 이를 처리)
                     shutil.move(temp_zip_path, final_jar_path)
+                    temp_zip_path_for_finally = None  # 이동 성공 시 삭제 대상에서 제외
                     logger.info(f"Successfully created JAR: {final_jar_path}")
                     created_jars.append(final_jar_path)
-                    temp_zip_file = None  # 이동 성공 시 None으로 설정하여 finally에서 삭제 시도 방지
+                    # temp_zip_file = None  # 이미 위에서 None으로 설정됨
 
                 except Exception as e:
                     logger.error(
@@ -137,22 +157,24 @@ def repack_mods(mods_folder):
                     )
                 finally:
                     # 임시 파일 정리 (오류 발생 또는 정상 처리 완료 후)
-                    if temp_zip_file:  # 파일 객체가 아직 열려있다면 닫기
+                    if temp_zip_file:  # 파일 객체가 아직 열려있다면 닫기 (예외 발생 시)
                         try:
                             temp_zip_file.close()
                         except Exception as close_err:
                             logger.error(
-                                f"Error closing temporary zip file: {close_err}"
+                                f"Error closing temporary zip file during finally: {close_err}"
                             )
-                    if temp_zip_path and os.path.exists(
-                        temp_zip_path
+                    if temp_zip_path_for_finally and os.path.exists(
+                        temp_zip_path_for_finally
                     ):  # 임시 파일 경로가 존재하고 파일이 남아있다면 삭제
                         try:
-                            os.remove(temp_zip_path)
-                            logger.debug(f"Removed temporary zip file: {temp_zip_path}")
+                            os.remove(temp_zip_path_for_finally)
+                            logger.debug(
+                                f"Removed temporary zip file: {temp_zip_path_for_finally}"
+                            )
                         except Exception as remove_err:
                             logger.error(
-                                f"Error removing temporary zip file {temp_zip_path}: {remove_err}"
+                                f"Error removing temporary zip file {temp_zip_path_for_finally}: {remove_err}"
                             )
 
             else:
@@ -308,3 +330,6 @@ def create_resourcepack(
 
     logger.info(f"리소스팩 생성 완료: {zip_path}")
     return zip_path
+
+
+print(repack_mods("./temp/progress/65326447/output/mods/extracted"))

@@ -36,6 +36,7 @@ DIR_FILTER_WHITELIST = [
     "/openloader",
     "/global_packs/required_data/",
     "/origins/",
+    "/powers/",
 ]
 
 # 기본 영어 단어 블랙리스트
