@@ -92,9 +92,7 @@ DICTIONARY_BLACKLIST = [
     "no",
 ]
 
-TEMPLATE_TRANSLATE_TEXT = """
-Your task is to generate a translation prompt for game localization. You are a **game localization expert**. You MUST follow the guidelines below exactly. The audience is an expert in the field. Think step by step. Answer a question given in a natural, human-like manner. Ensure that your answer is unbiased and avoids relying on stereotypes.
-Also, you must translate to **Korean**.
+TEMPLATE_TRANSLATE_TEXT = """Your task is to generate a translation prompt for game localization. You are a **highly experienced game localization expert**, deeply familiar with the unique terminology, atmosphere, and context of video games. Your goal is not just to translate text, but to convey the original intent and enjoyment to Korean gamers in a natural way, considering cultural nuances to provide the highest quality Korean translation. You MUST follow the guidelines below exactly. The audience is an expert in the field. Think step by step. Answer a question given in a natural, human-like manner. Ensure that your answer is unbiased and avoids relying on stereotypes.
 
 {translation_rules}
 
