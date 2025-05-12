@@ -57,16 +57,17 @@ class GlobalPacksOriginLoader(BaseLoader):
 
         if key not in self.json_key_white_list:
             return value, False
-        elif not isinstance(value, str):
-            return value, False
 
-        state = await translation_graph.ainvoke(
-            {
-                "text": value,
-                "custom_dictionary_dict": custom_dictionary_dict,
-                "llm": llm,
-                "context": context,
-                "translation_key": key,
-            }
-        )
-        return state["restored_text"], state["has_error"]
+        if isinstance(value, str):
+            state = await translation_graph.ainvoke(
+                {
+                    "text": value,
+                    "custom_dictionary_dict": custom_dictionary_dict,
+                    "llm": llm,
+                    "context": context,
+                    "translation_key": key,
+                }
+            )
+            return state["restored_text"], state["has_error"]
+        else:
+            return value, False

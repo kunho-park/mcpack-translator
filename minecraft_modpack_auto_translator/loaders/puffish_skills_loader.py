@@ -89,28 +89,41 @@ class PuffishSkillsLoader(BaseLoader):
         if not any(file in input_path for file in self.file_white_list):
             return value, False
 
-        if isinstance(value, dict):
-            for k in value.keys():
-                if k in self.json_key_white_list:
+        async def _translate_recursive(current_key: str, current_value: Any):
+            """값을 타입과 키 화이트리스트에 따라 재귀적으로 번역합니다."""
+            if isinstance(current_value, dict):
+                processed_dict = {}
+                aggregate_error = False
+                for k, v in current_value.items():
+                    # 중첩된 값을 재귀적으로 처리
+                    translated_v, error_v = await _translate_recursive(k, v)
+                    processed_dict[k] = translated_v
+                    aggregate_error = aggregate_error or error_v
+                return processed_dict, aggregate_error
+            elif isinstance(current_value, str) and current_key in self.json_key_white_list:
+                # 키가 화이트리스트에 있는 경우 문자열 값 번역
+                try:
                     state = await translation_graph.ainvoke(
                         {
-                            "text": value[k],
+                            "text": current_value,
                             "custom_dictionary_dict": custom_dictionary_dict,
                             "llm": llm,
                             "context": context,
-                            "translation_key": k,
+                            "translation_key": current_key,
                         }
                     )
-                    value[k] = state["restored_text"]
-        elif isinstance(value, str) and key in self.json_key_white_list:
-            state = await translation_graph.ainvoke(
-                {
-                    "text": value,
-                    "custom_dictionary_dict": custom_dictionary_dict,
-                    "llm": llm,
-                    "context": context,
-                    "translation_key": key,
-                }
-            )
-            return state["restored_text"], state["has_error"]
-        return value, False
+                    # state에 예상 키가 포함되어 있는지 확인하고, 없으면 기본값 제공
+                    restored_text = state.get("restored_text", current_value) # 키가 없으면 원본 반환
+                    has_error = state.get("has_error", False) # 키가 없으면 False 반환
+                    return restored_text, has_error
+                except Exception as e:
+                    self.logger.error(f"키 '{current_key}' 번역 중 오류 발생: {e}")
+                    # 예외 발생 시 원본 값과 오류 상태 반환
+                    return current_value, True
+            else:
+                # 딕셔너리나 화이트리스트에 없는 문자열이 아닌 값은 그대로 반환
+                return current_value, False
+
+        # 재귀 함수 초기 호출
+        processed_value, has_error = await _translate_recursive(key, value)
+        return processed_value, has_error
