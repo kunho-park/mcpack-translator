@@ -34,6 +34,8 @@ DIR_FILTER_WHITELIST = [
     "/paxi/resourcepacks/",
     "/puffish_skills/categories/",
     "/openloader",
+    "/aspects/origins/",
+    "/global_packs/required_data/",
 ]
 
 # 기본 영어 단어 블랙리스트
