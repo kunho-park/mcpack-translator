@@ -5,9 +5,9 @@ from .base_loader import BaseLoader
 from .context import TranslationContext
 
 
-class AspectsLoader(BaseLoader):
+class OriginsLoader(BaseLoader):
     """
-    Aspects 의 값을 처리하는 로더입니다.
+    GlobalPacks 의 Origin들  값을 처리하는 로더입니다.
     """
 
     def __init__(self):
@@ -26,7 +26,7 @@ class AspectsLoader(BaseLoader):
         """
         맞는 형식인지지 확인합니다.
         """
-        return "/aspects/origins/" in input_path
+        return "/origins/" in input_path
 
     def process(
         self, input_path: str, key: str, value: Any, context: TranslationContext

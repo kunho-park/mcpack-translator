@@ -1,4 +1,3 @@
-from .aspects_loader_ import AspectsLoader
 from .base_loader import BaseLoader
 from .context import TranslationContext
 from .default_loader import DefaultLoader
@@ -9,6 +8,7 @@ from .ftbquests_chapter_loader import (
 )
 from .global_packs_origin_loader import GlobalPacksOriginLoader
 from .list_loader import ListLoader
+from .origins_loader import OriginsLoader
 from .patchouli_books_loader import PatchouliBooksLoader
 from .paxi_loader import PaxiDatapackLoader
 from .puffish_skills_loader import PuffishSkillsLoader
@@ -34,5 +34,5 @@ __all__ = [
     "PuffishSkillsLoader",
     "PaxiDatapackLoader",
     "GlobalPacksOriginLoader",
-    "AspectsLoader",
+    "OriginsLoader",
 ]

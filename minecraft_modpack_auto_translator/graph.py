@@ -31,7 +31,6 @@ from .config import (
 )
 from .delay_manager import DelayManager
 from .loaders import (
-    AspectsLoader,
     DefaultLoader,
     DictLoader,
     FTBQuestsChapterQuestsLoader,
@@ -39,6 +38,7 @@ from .loaders import (
     GlobalPacksOriginLoader,
     ListLoader,
     LoaderRegistry,
+    OriginsLoader,
     PatchouliBooksLoader,
     PaxiDatapackLoader,
     PuffishSkillsLoader,
@@ -55,7 +55,7 @@ registry = LoaderRegistry()
 # 특수 케이스 먼저
 registry.register(WhiteListLoader())
 registry.register(GlobalPacksOriginLoader())
-registry.register(AspectsLoader())
+registry.register(OriginsLoader())
 registry.register(PatchouliBooksLoader())
 registry.register(FTBQuestsChapterQuestsLoader())
 registry.register(FTBQuestsChapterTitleLoader())
