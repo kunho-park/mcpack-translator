@@ -503,3 +503,5 @@ def create_modpack_translator_ui(config_state):
         gr.Timer(3).tick(fn=update_log, inputs=[config_state], outputs=log_output)
         gr.Timer(3).tick(fn=detail_update_log, outputs=detail_log_output)
     return tab
+
+

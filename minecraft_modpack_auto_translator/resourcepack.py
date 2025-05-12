@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 import zipfile
 from glob import escape as glob_escape
 from glob import glob
@@ -31,6 +32,142 @@ def normalize_glob_path(path):
         else:
             parts.append(glob_escape(part))
     return "/".join(parts)
+
+
+def repack_mods(mods_folder):
+    """
+    mods 폴더 내의 input 및 output 폴더를 기반으로 .jar 파일을 리패키징합니다.
+
+    1. output 폴더 내에 'data' 디렉토리가 있는 폴더를 찾습니다.
+    2. 해당 input 폴더 내용으로 임시 zip 파일을 생성합니다.
+    3. output 폴더 내용으로 임시 zip 파일을 업데이트(덮어쓰기)합니다.
+    4. 최종 .jar 파일을 mods_folder에 저장합니다.
+
+    Args:
+        mods_folder: input 및 output 폴더가 포함된 상위 폴더 경로
+
+    Returns:
+        생성된 .jar 파일 경로 리스트
+    """
+    created_jars = []
+    output_base = os.path.join(mods_folder, "output")
+    input_base = os.path.join(mods_folder, "input")
+
+    # output 폴더 내의 하위 폴더를 순회합니다.
+    # os.path.join(output_base, '*') 대신 glob을 사용하여 하위 폴더만 대상으로 합니다.
+    # output_base 자체가 존재하지 않을 경우를 대비합니다.
+    if not os.path.isdir(output_base):
+        logger.warning(f"Output base directory not found: {output_base}")
+        return []
+
+    for item_path in glob(os.path.join(output_base, "*")):
+        if not os.path.isdir(item_path):
+            continue  # 폴더만 처리
+
+        output_folder = item_path
+        # output 폴더 이름으로 input 폴더 경로를 구성합니다.
+        folder_name = os.path.basename(output_folder)
+        input_folder = os.path.join(input_base, folder_name)
+
+        # output 폴더 내에 'data' 디렉토리가 있는지 확인합니다.
+        try:
+            if "data" in os.listdir(output_folder):
+                logger.info(f"Processing folder: {folder_name}")
+
+                # input 폴더 존재 여부 확인
+                if not os.path.isdir(input_folder):
+                    logger.warning(
+                        f"Input folder not found for {folder_name}, skipping initial packing."
+                    )
+                    # input 폴더가 없으면 output만으로 jar 생성 또는 다른 처리 가능
+                    # 여기서는 일단 건너뛰거나, output만으로 생성할 수 있습니다.
+                    # 요구사항에 따라 output만으로 생성하도록 수정합니다.
+                    input_folder_exists = False
+                else:
+                    input_folder_exists = True
+
+                # 임시 zip 파일 생성
+                temp_zip_file = None  # finally 블록에서 사용하기 위해 초기화
+                try:
+                    # 임시 파일 생성 (고유 이름 보장)
+                    temp_fd, temp_zip_path = tempfile.mkstemp(suffix=".zip")
+                    os.close(temp_fd)  # 핸들 닫기
+                    temp_zip_file = zipfile.ZipFile(
+                        temp_zip_path, "w", zipfile.ZIP_DEFLATED
+                    )
+                    logger.debug(f"Created temporary zip file: {temp_zip_path}")
+
+                    # 1. input 폴더 내용 압축 (존재하는 경우)
+                    if input_folder_exists:
+                        logger.info(f"Packing contents from input: {input_folder}")
+                        for root, _, files in os.walk(input_folder):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path, input_folder)
+                                temp_zip_file.write(file_path, arcname)
+                                logger.debug(f"Added from input: {arcname}")
+
+                    # 2. output 폴더 내용 압축 (덮어쓰기)
+                    logger.info(
+                        f"Packing/overwriting contents from output: {output_folder}"
+                    )
+                    for root, _, files in os.walk(output_folder):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, output_folder)
+                            # 이미 input에서 추가된 파일이 있다면 덮어씁니다.
+                            temp_zip_file.write(file_path, arcname)
+                            logger.debug(f"Added/overwritten from output: {arcname}")
+
+                    temp_zip_file.close()  # 파일 쓰기 완료 후 닫기
+
+                    # 3. 최종 .jar 파일 생성 및 이동
+                    final_jar_name = f"{folder_name}.jar"
+                    final_jar_path = os.path.join(mods_folder, final_jar_name)
+
+                    # 기존 파일이 있으면 덮어쓰기 (shutil.move가 이를 처리)
+                    shutil.move(temp_zip_path, final_jar_path)
+                    logger.info(f"Successfully created JAR: {final_jar_path}")
+                    created_jars.append(final_jar_path)
+                    temp_zip_file = None  # 이동 성공 시 None으로 설정하여 finally에서 삭제 시도 방지
+
+                except Exception as e:
+                    logger.error(
+                        f"Error processing folder {folder_name}: {e}", exc_info=True
+                    )
+                finally:
+                    # 임시 파일 정리 (오류 발생 또는 정상 처리 완료 후)
+                    if temp_zip_file:  # 파일 객체가 아직 열려있다면 닫기
+                        try:
+                            temp_zip_file.close()
+                        except Exception as close_err:
+                            logger.error(
+                                f"Error closing temporary zip file: {close_err}"
+                            )
+                    if temp_zip_path and os.path.exists(
+                        temp_zip_path
+                    ):  # 임시 파일 경로가 존재하고 파일이 남아있다면 삭제
+                        try:
+                            os.remove(temp_zip_path)
+                            logger.debug(f"Removed temporary zip file: {temp_zip_path}")
+                        except Exception as remove_err:
+                            logger.error(
+                                f"Error removing temporary zip file {temp_zip_path}: {remove_err}"
+                            )
+
+            else:
+                logger.debug(
+                    f"'data' directory not found in {output_folder}, skipping."
+                )
+        except FileNotFoundError:
+            logger.warning(f"Could not list directory, skipping: {output_folder}")
+        except Exception as e:
+            logger.error(
+                f"An unexpected error occurred while processing {output_folder}: {e}",
+                exc_info=True,
+            )
+
+    return created_jars
 
 
 def create_resourcepack(
