@@ -1,3 +1,4 @@
+from .aspects_loader_ import AspectsLoader
 from .base_loader import BaseLoader
 from .context import TranslationContext
 from .default_loader import DefaultLoader
@@ -6,6 +7,7 @@ from .ftbquests_chapter_loader import (
     FTBQuestsChapterQuestsLoader,
     FTBQuestsChapterTitleLoader,
 )
+from .global_packs_origin_loader import GlobalPacksOriginLoader
 from .list_loader import ListLoader
 from .patchouli_books_loader import PatchouliBooksLoader
 from .paxi_loader import PaxiDatapackLoader
@@ -31,4 +33,6 @@ __all__ = [
     "WhiteListLoader",
     "PuffishSkillsLoader",
     "PaxiDatapackLoader",
+    "GlobalPacksOriginLoader",
+    "AspectsLoader",
 ]
