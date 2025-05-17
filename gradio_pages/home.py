@@ -15,6 +15,7 @@ def create_home_ui():
                 gr.Markdown("### 📌 주요 기능")
                 gr.Markdown("- 🌐 원클릭 모드팩 번역")
                 gr.Markdown("- 📄 단일 파일 번역")
+                gr.Markdown("- 🛠️ 리소스팩 업데이트")
                 gr.Markdown("- ⚙️ 모델 설정 관리")
 
             with gr.Column():

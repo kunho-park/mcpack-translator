@@ -8,6 +8,7 @@ from gradio_pages.file_translator import create_file_translator_ui
 from gradio_pages.home import create_home_ui
 from gradio_pages.model_settings import create_model_settings_ui
 from gradio_pages.modpack_translator import create_modpack_translator_ui
+from gradio_pages.update_modpack import create_update_modpack_ui
 
 load_dotenv()
 
@@ -36,6 +37,8 @@ def main():
                 create_modpack_translator_ui(config_state)
             with gr.TabItem("📄 단일 파일 번역기"):
                 create_file_translator_ui(config_state)
+            with gr.TabItem("🛠️ 번역 업데이트"):
+                create_update_modpack_ui()
             with gr.TabItem("⚙️ 모델 설정"):
                 create_model_settings_ui(config_state)
 

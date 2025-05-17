@@ -54,13 +54,13 @@ registry = LoaderRegistry()
 
 # 특수 케이스 먼저
 registry.register(WhiteListLoader())
+registry.register(PuffishSkillsLoader())
 registry.register(GlobalPacksOriginLoader())
 registry.register(OriginsLoader())
 registry.register(PatchouliBooksLoader())
 registry.register(FTBQuestsChapterQuestsLoader())
 registry.register(FTBQuestsChapterTitleLoader())
 registry.register(TConstructBooksLoader())
-registry.register(PuffishSkillsLoader())
 registry.register(PaxiDatapackLoader())
 
 # 일반 케이스
@@ -271,7 +271,6 @@ async def translate_text(state):
 
     translation_dictionary = context.translation_dictionary
     translation_dictionary_lowercase = context.translation_dictionary_lowercase
-
     restored_text = text_to_translate
 
     # 플레이스홀더 복원
@@ -405,9 +404,6 @@ async def translate_text(state):
                         "additional_rules": additional_rules,
                         "dictionary_instructions": DICTIONARY_INSTRUCTIONS,
                         "translation_rules": translation_rules,
-                        "translation_key": state["translation_key"]
-                        .replace("[", "")
-                        .replace("]", ""),
                     },
                 )
             except Exception as api_error:
@@ -553,6 +549,7 @@ def create_translation_graph():
         restored_text: str
         context: TranslationContext
         translation_key: str
+        recent_translations: list
 
     # 워크플로우 그래프 정의
     workflow = StateGraph(TranslationState)
