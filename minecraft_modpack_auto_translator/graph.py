@@ -708,7 +708,7 @@ async def translate_json_file(
                 key, value = await queue.get()
 
                 if ko_data.get(key) is not None:
-                    if ko_data[key] != value:
+                    if ko_data[key] != value and "patchouli_books" not in input_path:
                         logger.warning(f"한글 공식 번역 존재로 번역 건너뜀: {key}")
                         continue
 
