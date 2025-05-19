@@ -381,11 +381,11 @@ async def translate_text(state):
             class TranslationResponse(BaseModel):
                 translated_text: str = Field(
                     ...,
-                    description="Korean translated text",
+                    description="한국어 번역 텍스트",
                 )
                 new_dictionary_entries: List[DictionaryEntry] = Field(
                     default_factory=list,
-                    description="New dictionary entries to add from the translation",
+                    description="번역에서 추가할 새로운 사전 항목",
                 )
 
             parser = PydanticOutputParser(pydantic_object=TranslationResponse)

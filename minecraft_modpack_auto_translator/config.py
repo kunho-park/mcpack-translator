@@ -92,7 +92,8 @@ DICTIONARY_BLACKLIST = [
     "no",
 ]
 
-TEMPLATE_TRANSLATE_TEXT = """You are a **highly experienced game localization expert** for Korean. Your mission is to translate game text to a natural, high-quality Korean, capturing the original intent, cultural nuances, and game-specific atmosphere. Adhere strictly to all provided guidelines and placeholders.
+TEMPLATE_TRANSLATE_TEXT = """당신은 한국어 **게임 현지화에 매우 능숙한 전문가**입니다. 당신의 임무는 원문의 의도, 문화적 뉘앙스, 게임 고유의 분위기를 살려 게임 텍스트를 자연스럽고 수준 높은 한국어로 번역하는 것입니다. 
+제공된 모든 지침을 엄격히 준수해야 합니다.
 
 {translation_rules}
 
@@ -101,12 +102,15 @@ TEMPLATE_TRANSLATE_TEXT = """You are a **highly experienced game localization ex
 </dictionary_instructions>{placeholders}
 
 <dictionary>
-### Glossary (Contextual Use - Do Not Blindly Trust) ###
+### 용어집 (문맥에 맞게 사용 - 맹신 금지) ###
+잘못된 용어가 있을 수 있으므로, 용어집을 참고하되 필요에 따라 용어를 조정해야 합니다. 
+용어집에 없는 용어는 자연스러운 한국어로 번역해야 합니다.
+
 {dictionary}
 </dictionary>
 
 <format_instructions>
-### Formatting Rules ###
+### 서식 규칙 ###
 {format_instructions}
 </format_instructions>
 
@@ -118,45 +122,45 @@ TEMPLATE_TRANSLATE_TEXT = """You are a **highly experienced game localization ex
 """
 
 RULES_FOR_PLACEHOLDER = """<translation_rules>
-### Core Translation Directives ###
-1.  **Placeholder Integrity**: Preserve all `[P<number>]` tokens EXACTLY. Do not modify, translate, delete, or add new ones. Maintain their original position within words/sentences.
-2.  **Natural Korean**: Translate faithfully into smooth, idiomatic Korean.
-3.  **Glossary Usage**: Refer to the glossary, adapting terms as needed. For non-glossary terms, provide natural Korean translations.
-4.  **No Mixed Languages**: Output Korean only, unless an English term must be retained (e.g., "OK").
-    *   Incorrect: "이름을 enter하세요"
-    *   Correct: "이름을 입력하세요"
-5.  **Capitalization**: Match original English capitalization for retained terms, acronyms, and proper nouns.
+### 핵심 번역 지침 ###
+1.  **플레이스홀더 무결성**: 모든 `[P<숫자>]` 토큰을 **정확히** 보존해야 합니다. 수정, 번역, 삭제하거나 새로 추가해서는 안 됩니다. 단어/문장 내 원래 위치를 유지해야 합니다.
+2.  **자연스러운 한국어**: 자연스럽고 관용적인 한국어로 충실하게 번역해야 합니다.
+3.  **용어집 활용**: 용어집을 참고하되, 필요에 따라 용어를 조정해야 합니다. 용어집에 없는 용어는 자연스러운 한국어로 번역해야 합니다.
+4.  **혼용 금지**: 영단어를 반드시 유지해야 하는 경우(예: "OK")를 제외하고는 한국어만 사용해야 합니다.
+    *   틀린 예: "이름을 enter하세요"
+    *   옳은 예: "이름을 입력하세요"
+5.  **대소문자**: 유지되는 영단어, 약어, 고유 명사의 경우 원문 영어의 대소문자 표기를 따라야 합니다.
 </translation_rules>
 
 <placeholders_rules>
-### Placeholder Specifics (`[P<number>]`) ###
-1.  **Critical**: NEVER alter, translate, or remove placeholders.
-2.  **Position**: Keep placeholders in their EXACT original positions.
-    *   Correct: "This is [P1]test[P2]" → "이것은 [P1]테스트[P2]입니다."
-    *   Incorrect (Position Changed): "This is [P1]test[P2]" → "[P1]이것은 테스트[P2]입니다."
-    *   Incorrect (Merged): "This is [P1]test[P2]" → "이것은 테스트[P1][P2]입니다."
-    Misplacing/omitting placeholders BREAKS THE GAME. Maintain original placement.
+### 플레이스홀더 상세(`[P<숫자>]`) ###
+1.  **중요**: 플레이스홀더를 절대 변경, 번역, 제거해서는 안 됩니다.
+2.  **위치**: 플레이스홀더를 **정확히** 원래 위치에 유지해야 합니다.
+    *   옳은 예: "This is [P1]test[P2]" → "이것은 [P1]테스트[P2]입니다."
+    *   틀린 예 (위치 변경): "This is [P1]test[P2]" → "[P1]이것은 테스트[P2]입니다."
+    *   틀린 예 (병합): "This is [P1]test[P2]" → "이것은 테스트[P1][P2]입니다."
+    플레이스홀더를 잘못 배치하거나 생략하면 게임이 손상됩니다. 원래 위치를 유지해야 합니다.
 </placeholders_rules>"""
 
 RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
-### Core Translation Directives ###
-1.  **Natural Korean**: Translate faithfully into smooth, idiomatic Korean.
-2.  **Glossary Usage**: Refer to the glossary, adapting terms as needed. For non-glossary terms, provide natural Korean translations.
-3.  **No Mixed Languages**: Output Korean only, unless an English term must be retained (e.g., "OK").
-    *   Incorrect: "이름을 enter하세요"
-    *   Correct: "이름을 입력하세요"
-4.  **Capitalization**: Match original English capitalization for retained terms, acronyms, and proper nouns.
+### 핵심 번역 지침 ###
+1.  **자연스러운 한국어**: 자연스럽고 관용적인 한국어로 충실하게 번역해야 합니다.
+2.  **용어집 활용**: 용어집을 참고하되, 필요에 따라 용어를 조정해야 합니다. 용어집에 없는 용어는 자연스러운 한국어로 번역해야 합니다.
+3.  **혼용 금지**: 영단어를 반드시 유지해야 하는 경우(예: "OK")를 제외하고는 한국어만 사용해야 합니다.
+    *   틀린 예: "이름을 enter하세요"
+    *   옳은 예: "이름을 입력하세요"
+4.  **대소문자**: 유지되는 영단어, 약어, 고유 명사의 경우 원문 영어의 대소문자 표기를 따라야 합니다.
 </translation_rules>"""
 
-DICTIONARY_INSTRUCTIONS = """### Glossary Contribution Guidelines ###
-1.  If a key term should be in the glossary, add it to `new_dictionary_entries`.
-2.  Provide the final Korean translation in the `ko` field.
-3.  Korean only in `ko` field (e.g., `{"en": "Crafting Table", "ko": "크래프팅 테이블"}` not `"크래프팅 Table"`).
-4.  Register words or short phrases, not full sentences.
+DICTIONARY_INSTRUCTIONS = """### 용어집 기여 지침 ###
+1.  핵심 용어가 용어집에 포함되어야 한다면 `new_dictionary_entries`에 추가하십시오.
+2.  `ko` 필드에 최종 한국어 번역을 제공하십시오.
+3.  `ko` 필드에는 한국어만 사용하십시오 (예: `{"en": "Crafting Table", "ko": "조합대"}`. `"크래프팅 Table"`과 같이 사용하지 마십시오).
+4.  단어나 짧은 구문을 등록하고, 전체 문장은 등록하지 마십시오.
 
-### Example ###
+### 예시 ###
 O `{"en": "Iridium", "ko": "이리듐"}`
-(Use English in `ko` only if essential, e.g., `{"en": "OK", "ko": "OK"}`)
+(필수적인 경우에만 `ko` 필드에 영어를 사용하십시오. 예: `{"en": "OK", "ko": "OK"}`)
 """
 
 DICTIONARY_PREFIX_WHITELIST = [
