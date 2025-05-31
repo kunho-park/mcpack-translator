@@ -99,7 +99,6 @@ def extract_special_formats(text):
         i for i in re.findall(SQUARE_BRACKET_TAG_PATTERN, text) if i != ""
     ]
 
-
     # 마인크래프트 아이템 코드 패턴 (예: minecraft:grass)
     minecraft_item_codes = [
         i[0] for i in re.findall(MINECRAFT_ITEM_CODE_PATTERN, text) if i != ""
@@ -153,9 +152,13 @@ async def analyze_text(state):
         context.initialize_dictionaries()
 
     if context.force_keep_line_break and "\n" in replaced_text:
-        newline_placeholder = "[P_NEWLINE]"
-        replaced_text = re.sub(r"\n", newline_placeholder, replaced_text)
-        placeholder_map[newline_placeholder] = "\n"
+        logger.info(f"줄바꿈 강제 유지: {replaced_text}")
+        num = 0
+        for i in re.findall(r"\n", replaced_text):
+            num += 1
+            newline_placeholder = f"[P_NEWLINE_{num}]"
+            replaced_text = re.sub(i, newline_placeholder, replaced_text, 1)
+            placeholder_map[newline_placeholder] = i
 
     return {
         "text": text,
