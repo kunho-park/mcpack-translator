@@ -15,6 +15,20 @@ class WhiteListLoader(BaseLoader):
         self.whitelist = (
             ("/ftbquests/quests/chapters/", "quests"),
             ("/ftbquests/quests/chapters/", "title"),
+            ("/paxi/", "name"),
+            ("/paxi/", "description"),
+            ("/paxi/", "desc"),
+            ("/paxi/", "title"),
+            ("/paxi/", "subtitle"),
+            ("/paxi/", "text"),
+            ("/paxi/", "tooltip"),
+            ("/openloader/", "name"),
+            ("/openloader/", "description"),
+            ("/openloader/", "desc"),
+            ("/openloader/", "title"),
+            ("/openloader/", "subtitle"),
+            ("/openloader/", "text"),
+            ("/openloader/", "tooltip"),
         )
 
     def can_handle(
