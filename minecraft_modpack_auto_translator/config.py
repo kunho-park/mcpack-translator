@@ -140,6 +140,7 @@ RULES_FOR_PLACEHOLDER = """<translation_rules>
     *   틀린 예 (위치 변경): "This is [P1]test[P2]" → "[P1]이것은 테스트[P2]입니다."
     *   틀린 예 (병합): "This is [P1]test[P2]" → "이것은 테스트[P1][P2]입니다."
     플레이스홀더를 잘못 배치하거나 생략하면 게임이 손상됩니다. 원래 위치를 유지해야 합니다.
+    플레이스홀더는 번역내에 색상 코드 및 여러 효과 혹은 데이터를 포함합니다. 이를 고려하여 번역하세요.
 </placeholders_rules>"""
 
 RULES_FOR_NO_PLACEHOLDER = """<translation_rules>
