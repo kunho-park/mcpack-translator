@@ -38,6 +38,9 @@ class WhiteListLoader(BaseLoader):
         맞는 형식인지 확인합니다.
         """
 
+        if "/lang/" in input_path:
+            return False
+
         key_finded = False
         path_finded = False
         for path, whitelist_key in self.whitelist:
