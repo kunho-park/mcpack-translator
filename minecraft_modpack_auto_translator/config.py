@@ -16,15 +16,14 @@ OFFICIAL_KO_LANG_FILE = json.load(
 )
 
 FORMAT_CODE_PATTERN = r"[§&][0-9a-fk-or]"
-C_PLACEHOLDER_PATTERN = r"%(?:[sd]|1\$s)"
+C_PLACEHOLDER_PATTERN = r"%(?:[sd]|[0-9]+\$s)"
 ITEM_PLACEHOLDER_PATTERN = r"\$\([^)]*\)"
 JSON_PLACEHOLDER_PATTERN = r"\{(?:[^{}]|(?R))*\}"
 HTML_TAG_PATTERN = r"<[^>]*>"
 # 연속된 점(.)이나 슬래시(/)를 허용하지 않고, 경로가 영숫자나 밑줄(_)로 시작하고 끝나도록 수정된 패턴
 MINECRAFT_ITEM_CODE_PATTERN = r"((\[[a-zA-Z_0-9]+[:.]([0-9a-zA-Z_]+([./][0-9a-zA-Z_]+)*)\])|([a-zA-Z_0-9]+[:.]([0-9a-zA-Z_]+([./][0-9a-zA-Z_]+)*)))"
-# 대괄호 태그 패턴 (그룹1: 여는 태그, 그룹2: 내용, 그룹3: 닫는 태그 감지)
-SQUARE_BRACKET_TAG_PATTERN = r"(\[[a-z0-9_]+\])(.*?)?(\[/[a-z0-9_]+\])"
 
+SQUARE_BRACKET_TAG_PATTERN = r"\[[A-Za-z0-9_]+\]"
 
 ADDED_DICTIONARY_ENTRIES = []
 

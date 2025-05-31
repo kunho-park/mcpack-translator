@@ -27,6 +27,7 @@ from .config import (
     MINECRAFT_ITEM_CODE_PATTERN,
     RULES_FOR_NO_PLACEHOLDER,
     RULES_FOR_PLACEHOLDER,
+    SQUARE_BRACKET_TAG_PATTERN,
     TEMPLATE_TRANSLATE_TEXT,
 )
 from .delay_manager import DelayManager
@@ -94,6 +95,10 @@ def extract_special_formats(text):
         i for i in re.findall(ITEM_PLACEHOLDER_PATTERN, text) if i != ""
     ]
     html_tags_placeholders = [i for i in re.findall(HTML_TAG_PATTERN, text) if i != ""]
+    square_bracket_tags = [
+        i for i in re.findall(SQUARE_BRACKET_TAG_PATTERN, text) if i != ""
+    ]
+
 
     # 마인크래프트 아이템 코드 패턴 (예: minecraft:grass)
     minecraft_item_codes = [
@@ -112,6 +117,7 @@ def extract_special_formats(text):
         + format_codes
         + c_placeholders
         + minecraft_item_codes
+        + square_bracket_tags
     ):
         try:
             if placeholder in replaced_text:
