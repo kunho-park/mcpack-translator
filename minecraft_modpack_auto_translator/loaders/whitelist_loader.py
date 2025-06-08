@@ -15,6 +15,8 @@ class WhiteListLoader(BaseLoader):
         self.whitelist = (
             ("/ftbquests/quests/chapters/", "quests"),
             ("/ftbquests/quests/chapters/", "title"),
+            ("/ftbquests/quests/reward_tables/", "rewards"),
+            ("/ftbquests/quests/reward_tables/", "title"),
             ("/paxi/", "name"),
             ("/paxi/", "description"),
             ("/paxi/", "desc"),

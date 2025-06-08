@@ -115,7 +115,12 @@ async def run_json_translation(
         )
 
     # 사전 컨텍스트 초기화 (LLM 인스턴스 생성 전에 수행)
-    context = TranslationContext(create_translation_graph(), dict_init, registry)
+    context = TranslationContext(
+        create_translation_graph(),
+        dict_init,
+        registry,
+        force_keep_line_break=force_keep_line_break,
+    )
     context.initialize_dictionaries()
 
     results = []
@@ -133,8 +138,10 @@ async def run_json_translation(
         out_path = pair["output"]
         ko_data = pair["data"]
 
-        if skip_translated and os.path.exists(out_path) and not any(
-            d in out_path for d in DIR_FILTER_WHITELIST
+        if (
+            skip_translated
+            and os.path.exists(out_path)
+            and not any(d in out_path for d in DIR_FILTER_WHITELIST)
         ):
             results.append(out_path)
             if logger_client:

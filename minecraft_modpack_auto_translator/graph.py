@@ -36,6 +36,8 @@ from .loaders import (
     DictLoader,
     FTBQuestsChapterQuestsLoader,
     FTBQuestsChapterTitleLoader,
+    FTBQuestsRewardTableLoader,
+    FTBQuestsRewardTableTitleLoader,
     GlobalPacksOriginLoader,
     ListLoader,
     LoaderRegistry,
@@ -61,6 +63,8 @@ registry.register(OriginsLoader())
 registry.register(PatchouliBooksLoader())
 registry.register(FTBQuestsChapterQuestsLoader())
 registry.register(FTBQuestsChapterTitleLoader())
+registry.register(FTBQuestsRewardTableLoader())
+registry.register(FTBQuestsRewardTableTitleLoader())
 registry.register(TConstructBooksLoader())
 registry.register(PaxiDatapackLoader())
 
@@ -152,7 +156,7 @@ async def analyze_text(state):
         context.initialize_dictionaries()
 
     if context.force_keep_line_break and "\n" in replaced_text:
-        logger.info(f"줄바꿈 강제 유지: {replaced_text}")
+        logger.debug(f"줄바꿈 강제 유지: {replaced_text}")
         num = 0
         for i in re.findall(r"\n", replaced_text):
             num += 1

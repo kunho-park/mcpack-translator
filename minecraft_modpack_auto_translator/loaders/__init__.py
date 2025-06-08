@@ -6,6 +6,10 @@ from .ftbquests_chapter_loader import (
     FTBQuestsChapterQuestsLoader,
     FTBQuestsChapterTitleLoader,
 )
+from .ftbquests_reward_table_loader import (
+    FTBQuestsRewardTableLoader,
+    FTBQuestsRewardTableTitleLoader,
+)
 from .global_packs_origin_loader import GlobalPacksOriginLoader
 from .list_loader import ListLoader
 from .origins_loader import OriginsLoader
@@ -30,6 +34,8 @@ __all__ = [
     "TConstructBooksLoader",
     "FTBQuestsChapterTitleLoader",
     "FTBQuestsChapterQuestsLoader",
+    "FTBQuestsRewardTableLoader",
+    "FTBQuestsRewardTableTitleLoader",
     "WhiteListLoader",
     "PuffishSkillsLoader",
     "PaxiDatapackLoader",

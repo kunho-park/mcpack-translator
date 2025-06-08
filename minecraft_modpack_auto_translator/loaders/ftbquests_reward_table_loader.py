@@ -6,7 +6,7 @@ from .base_loader import BaseLoader
 from .context import TranslationContext
 
 
-class FTBQuestsChapterQuestsLoader(BaseLoader):
+class FTBQuestsRewardTableLoader(BaseLoader):
     """
     FTBQuests 챕터 값을 처리하는 로더입니다.
     """
@@ -29,8 +29,8 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
         """
         return (
             isinstance(value, list)
-            and "/ftbquests/quests/chapters/" in input_path
-            and "quests" == key
+            and "/ftbquests/quests/reward_tables/" in input_path
+            and "rewards" == key
             and len(value) > 0
             and isinstance(value[0], dict)
         )
@@ -219,7 +219,7 @@ class FTBQuestsChapterQuestsLoader(BaseLoader):
         return value, has_error_total
 
 
-class FTBQuestsChapterTitleLoader(BaseLoader):
+class FTBQuestsRewardTableTitleLoader(BaseLoader):
     """
     FTBQuests 챕터 값을 처리하는 로더입니다.
     """
@@ -242,7 +242,7 @@ class FTBQuestsChapterTitleLoader(BaseLoader):
         """
         return (
             isinstance(value, str)
-            and "/ftbquests/quests/chapters/" in input_path
+            and "/ftbquests/quests/reward_tables/" in input_path
             and "title" == key
         )
 
