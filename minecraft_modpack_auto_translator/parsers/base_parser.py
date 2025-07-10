@@ -75,6 +75,10 @@ class BaseParser(ABC):
             from .xml_parser import XMLParser
 
             return XMLParser
+        elif extension == ".js":
+            from .js_parser import JSParser
+
+            return JSParser
         else:
             return None
 
@@ -86,4 +90,4 @@ class BaseParser(ABC):
         Returns:
             List[str]: 지원하는 파일 확장자 목록
         """
-        return [".json", ".lang", ".txt", ".snbt", ".xml"]
+        return [".json", ".lang", ".txt", ".snbt", ".xml", ".js"]

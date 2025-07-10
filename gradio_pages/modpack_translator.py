@@ -110,7 +110,7 @@ def create_modpack_translator_ui(config_state):
                         )
                     use_random_order = gr.Checkbox(label="랜덤 순서로 번역", value=True)
                     force_keep_line_break = gr.Checkbox(
-                        label="줄바꿈 강제 유지", value=False
+                        label="줄바꿈 강제 유지", value=True
                     )
                     with gr.Row():
                         share_results = gr.Checkbox(
@@ -503,5 +503,3 @@ def create_modpack_translator_ui(config_state):
         gr.Timer(3).tick(fn=update_log, inputs=[config_state], outputs=log_output)
         gr.Timer(3).tick(fn=detail_update_log, outputs=detail_log_output)
     return tab
-
-

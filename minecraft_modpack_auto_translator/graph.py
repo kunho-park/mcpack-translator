@@ -23,6 +23,7 @@ from .config import (
     FORMAT_CODE_PATTERN,
     HTML_TAG_PATTERN,
     ITEM_PLACEHOLDER_PATTERN,
+    JS_TEMPLATE_LITERAL_PATTERN,
     JSON_PLACEHOLDER_PATTERN,
     MINECRAFT_ITEM_CODE_PATTERN,
     RULES_FOR_NO_PLACEHOLDER,
@@ -39,6 +40,7 @@ from .loaders import (
     FTBQuestsRewardTableLoader,
     FTBQuestsRewardTableTitleLoader,
     GlobalPacksOriginLoader,
+    KubeJSScriptLoader,
     ListLoader,
     LoaderRegistry,
     OriginsLoader,
@@ -67,6 +69,7 @@ registry.register(FTBQuestsRewardTableLoader())
 registry.register(FTBQuestsRewardTableTitleLoader())
 registry.register(TConstructBooksLoader())
 registry.register(PaxiDatapackLoader())
+registry.register(KubeJSScriptLoader())
 
 # 일반 케이스
 registry.register(ListLoader())
@@ -77,7 +80,7 @@ registry.register(DefaultLoader())  # 기본 로더는 항상 마지막
 # 로거 설정
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
@@ -108,13 +111,18 @@ def extract_special_formats(text):
         i[0] for i in re.findall(MINECRAFT_ITEM_CODE_PATTERN, text) if i != ""
     ]
 
+    js_template_literals = [
+        i for i in re.findall(JS_TEMPLATE_LITERAL_PATTERN, text) if i != ""
+    ]
+
     # 모든 특수 형식을 [PLACEHOLDER_N] 형태로 대체
     replaced_text = text
     placeholder_map = {}
     placeholder_count = 0
 
     for placeholder in (
-        html_tags_placeholders
+        js_template_literals
+        + html_tags_placeholders
         + item_placeholders
         + json_placeholders
         + format_codes
@@ -510,7 +518,7 @@ async def translate_text(state):
             additional_rules = "\n\n### 중요: json 형식을 지키지 않아 파싱 오류가 발생했습니다.\nformat_instructions을 반드시 지켜서 다시 작성 해주세요."
             logger.error(f"파싱 오류 발생: {e}, 프롬프트에 강조구문 추가 후 다시 시도")
         except RuntimeError as e:
-            if "Invalid json output" in str(e):
+            if "Invalid json output" in str(e) or "Failed to parse" in str(e):
                 temperature += 0.1
                 additional_rules = "\n\n### 중요: json 형식을 지키지 않아 파싱 오류가 발생했습니다.\nformat_instructions을 반드시 지켜서 다시 작성 해주세요."
                 logger.error(

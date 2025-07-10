@@ -11,6 +11,7 @@ from .ftbquests_reward_table_loader import (
     FTBQuestsRewardTableTitleLoader,
 )
 from .global_packs_origin_loader import GlobalPacksOriginLoader
+from .kubejs_script_loader import KubeJSScriptLoader
 from .list_loader import ListLoader
 from .origins_loader import OriginsLoader
 from .patchouli_books_loader import PatchouliBooksLoader
@@ -41,4 +42,5 @@ __all__ = [
     "PaxiDatapackLoader",
     "GlobalPacksOriginLoader",
     "OriginsLoader",
+    "KubeJSScriptLoader",
 ]

@@ -20,6 +20,8 @@ class ListLoader(BaseLoader):
         """
         값이 일반 리스트인지 확인합니다.
         """
+        if "/puffish_skills/" in input_path:
+            return False
         return isinstance(value, list) and all(isinstance(item, str) for item in value)
 
     def process(

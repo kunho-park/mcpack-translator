@@ -20,6 +20,9 @@ class StringLoader(BaseLoader):
         """
         문자열 값인지 확인합니다.
         """
+        # KubeJS 스크립트(.js) 내부 문자열은 전용 로더가 처리하므로 제외
+        if "/kubejs/" in input_path.replace("\\", "/"):
+            return False
         return isinstance(value, str) and value.strip() != ""
 
     def process(
